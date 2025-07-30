@@ -1,59 +1,84 @@
-# SmartContract template [![TEST](https://github.com/tnkshuuhei/foundry-template/actions/workflows/test.yaml/badge.svg?branch=main)](https://github.com/tnkshuuhei/foundry-template/actions/workflows/test.yaml) [![Slither Analysis](https://github.com/tnkshuuhei/foundry-template/actions/workflows/slither.yaml/badge.svg)](https://github.com/tnkshuuhei/foundry-template/actions/workflows/slither.yaml) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+## e.g. Protocol Guild style of IE
 
-## Usage
-
-```sh
-forge init --template tnkshuuhei/foundry-template my-project
-cd my-project
-pnpm run setup
+```
+ImpactEvaluator {
+ foreach round(4m) {
+   metrics = measure(time, full_or_part_time)
+   weight = calculateTimeWeight()
+   rewards = split(weight)
+ }
+}
 ```
 
-This is a list of the most frequently needed commands.
+## Time Weight Formula
 
-### Build
+The time weight for each contributor is calculated using the following formula:
 
-Build the contracts:
+### Individual Time Weight
 
-```sh
-pnpm build
-```
+For contributor $i$ at evaluation round $t$:
 
-### Clean
+$$w_i(t) = \sqrt{(d_i^{start} - d_i^{inactive}) \cdot f_i}$$
 
-Delete the build artifacts and cache directories:
+Where:
 
-```sh
-pnpm clean
-```
+- $w_i(t)$ = time weight for contributor $i$ at time $t$
+- $d_i^{start}$ = start date (in months) for contributor $i$
+- $d_i^{inactive}$ = months inactive for contributor $i$
+- $f_i$ = full/part-time multiplier for contributor $i$
 
-### Compile
+### Full/Part-time Multiplier
 
-Compile the contracts:
+$$
+f_i = \begin{cases}
+1.0 & \text{if full-time (≥40 hr/wk)} \\
+0.5 & \text{if part-time (20-40 hr/wk)}
+\end{cases}
+$$
 
-```sh
-pnpm build
-```
+### Normalized Share Calculation
 
-### Coverage
+The final share percentage for contributor $i$:
 
-Get a test coverage report:
+$$s_i(t) = \frac{w_i(t)}{\sum_{j=1}^{n} w_j(t)} \times 100$$
 
-```sh
-pnpm coverage
-```
+Where $n$ is the total number of contributors.
 
-### Gas Usage
+The total weight across all contributors:
 
-Get a gas report:
+$$W_{total}(t) = \sum_{i=1}^{n} w_i(t) = \sum_{i=1}^{n} \sqrt{(d_i^{start} - d_i^{inactive}) \cdot f_i}$$
 
-```sh
-forge test --gas-report
-```
+The final share calculation using sigma notation:
 
-### Test
+$$s_i(t) = \frac{\sqrt{(d_i^{start} - d_i^{inactive}) \cdot f_i}}{\sum_{j=1}^{n} \sqrt{(d_j^{start} - d_j^{inactive}) \cdot f_j}} \times 100$$
 
-Run the tests:
+---
 
-```sh
-pnpm test
+- admin create pool on IE contract
+- then initialize pool with config
+
+  - use splits module as reward function
+  - use time control module as an measurement function
+  - use below fomula as an evaluation function
+
+  > Each member’s share of the split contract is calculated using member-specific inputs. There are two parts to the calculation:
+  > Calculate each member’s time*weight: time_weight = SQRT((start_date - months_inactive) * full*or_part_time)
+  > Normalize time_weight as a percentage: split_share = (time_weight / total_time_weights) * 100
+  > This formulation recognizes the local knowledge contributors gain over time, and uses that as a proxy for “value to the commons” and to allocate funding to members. Existing contributor weights get “diluted” as newcomers show up. Continuing contributors get additional weight per month they are active.
+  > Each member’s time-weight is updated onchain every quarter along with an Ethereum address they control to allocate the funding flowing through the mechanism.
+
+- once pool is initialized, admin will update evaluation(this will change the share of each recipients on splits contract)
+
+```mermaid
+sequenceDiagram
+
+actor admin as Admin
+participant ie as IE Contract
+participant splits as Splits Contract
+participant eval as Evaluation Contract
+participant time as Time Control Module
+
+actor alice as Alice
+actor bob as Bob
+actor charlie as Charlie
 ```
