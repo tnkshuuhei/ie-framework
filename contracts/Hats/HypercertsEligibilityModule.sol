@@ -2,7 +2,7 @@
 pragma solidity ^0.8.19;
 
 import { HatsEligibilityModule, HatsModule } from "hats-module/src/HatsEligibilityModule.sol";
-import { IHypercertToken } from "./interfaces/IHypercertToken.sol";
+import { IHypercertToken } from "../interfaces/IHypercertToken.sol";
 
 contract HypercertsEligibility is HatsEligibilityModule {
     /*//////////////////////////////////////////////////////////////
