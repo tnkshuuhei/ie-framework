@@ -1,3 +1,6 @@
 @openzeppelin/contracts/=lib/openzeppelin-contracts-upgradeable/lib/openzeppelin-contracts/contracts/
 @openzeppelin/contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/contracts/
 forge-std/=lib/forge-std/
+
+splits-contracts/=lib/splits-contracts/contracts/
+hats-protocol/=lib/hats-protocol/
