@@ -2,7 +2,7 @@
 pragma solidity >=0.8.29;
 
 import { IReward } from "./interfaces/IReward.sol";
-import { IHats } from "hats-protocol/interfaces/IHats.sol";
+import { IHats } from "hats-protocol/Interfaces/IHats.sol";
 import { ISplitMain } from "./interfaces/ISplitMain.sol";
 import { IHatsModuleFactory } from "./interfaces/IHatsModuleFactory.sol";
 
@@ -76,4 +76,7 @@ contract IE {
 
         emit PoolCreated(poolCount, pool.admin, pool.recipients);
     }
+
+    // TODO: create Evaluation Function that update the share of splits
+    // TODO: create internal function that setup reward function with splits contract
 }
