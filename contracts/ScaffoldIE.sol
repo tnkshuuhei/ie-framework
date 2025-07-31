@@ -7,7 +7,7 @@ import { IHatsModuleFactory } from "./interfaces/IHatsModuleFactory.sol";
 import { IHatsHatCreatorModule } from "./Hats/IHatCreatorModule.sol";
 import { IHatsTimeControlModule } from "./Hats/ITimeControlModule.sol";
 
-contract IE {
+contract ScaffoldIE {
     // Custom errors
     error ZeroAddress();
     error InvalidArrayLength();
