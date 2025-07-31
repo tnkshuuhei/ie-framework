@@ -74,6 +74,74 @@ $$s_i(t) = \frac{\sqrt{(d_i^{start} - d_i^{inactive}) \cdot f_i}}{\sum_{j=1}^{n}
 > This formulation recognizes the local knowledge contributors gain over time, and uses that as a proxy for “value to the commons” and to allocate funding to members. Existing contributor weights get “diluted” as newcomers show up. Continuing contributors get additional weight per month they are active.
 > Each member’s time-weight is updated onchain every quarter along with an Ethereum address they control to allocate the funding flowing through the mechanism.
 
+```mermaid
+sequenceDiagram
+    participant Admin
+    participant IE as ScaffoldIE Contract
+    participant Hats as HatsProtocol
+    participant Splits as SplitsContract
+    participant Factory as ModuleFactory
+    participant Creator as HatCreatorModule
+    participant TimeControl as TimeControlModule
+    participant Evaluators
+    participant Recipients
+
+    Note over Admin,Recipients: Contract Initialization
+    Admin->>IE: constructor(owner, hats, splits, metadata, imageURL, factory, creatorImpl, timeControlImpl)
+    IE->>Hats: mintTopHat(owner, metadata, imageURL)
+    Hats-->>IE: topHatId
+    IE->>IE: Store contract addresses and topHatId
+
+    Note over Admin,Recipients: Pool Creation Process
+    Admin->>IE: createPool(encodedData)
+    IE->>IE: Decode pool configuration data
+    IE->>IE: Validate inputs (addresses, arrays, allocations)
+
+    IE->>Hats: createHat(parentId, metadata, maxSupply, eligibility, toggle, mutable, imageURL)
+    Hats-->>IE: managerHatId
+    IE->>IE: Store poolToManagerHat[poolId] = managerHatId
+
+    IE->>Factory: createHatsModule(creatorImpl, managerHatId, "", initData, 0)
+    Factory-->>IE: hatCreatorModule
+    IE->>Hats: mintHat(managerHatId, hatCreatorModule)
+
+    IE->>Factory: createHatsModule(timeControlImpl, managerHatId, "", initData, 0)
+    Factory-->>IE: timeControlModule
+    IE->>Hats: mintHat(managerHatId, timeControlModule)
+
+    IE->>Splits: createSplit(recipients, allocations, 0, admin)
+    Splits-->>IE: splitsContract
+    IE->>IE: Store splitsContracts[poolId] = splitsContract
+
+    IE->>Creator: createHat(managerHatId, evaluatorMetadata, 1, eligibility, toggle, mutable, "")
+    Creator-->>IE: evaluatorHatId
+
+    IE->>Creator: createHat(managerHatId, recipientMetadata, recipients.length, eligibility, toggle, mutable, "")
+    Creator-->>IE: recipientHatId
+
+    loop For each evaluator
+        IE->>TimeControl: mintHat(evaluatorHatId, evaluator, block.timestamp)
+    end
+
+    loop For each recipient
+        IE->>TimeControl: mintHat(recipientHatId, recipient, block.timestamp)
+    end
+
+    IE->>IE: emit PoolCreated(poolId, managerHatId, splitsContract, evaluatorHatId, recipientHatId, evaluators, recipients)
+
+    Note over Admin,Recipients: Evaluation Process
+    Evaluators->>IE: evaluate(poolId)
+    IE->>IE: Validate pool exists
+    IE->>IE: Get splitsContract and recipients from pool
+    IE->>IE: Calculate time-weighted allocations
+    IE->>Splits: updateSplit(splitsContract, accounts, percentAllocations, 0)
+
+    Note over Admin,Recipients: Time Weight Calculation
+    Note over IE: For each contributor i:
+    Note over IE: time_weight_i = √((start_date_i - months_inactive_i) × full_or_part_time_i)
+    Note over IE: normalized_share_i = (time_weight_i / Σtime_weights) × 100
+```
+
 ### Sources
 
 [https://app.splits.org/accounts/0xd982477216daDD4C258094B071b49D17b6271d66/?chainId=1](https://app.splits.org/accounts/0xd982477216daDD4C258094B071b49D17b6271d66/?chainId=1)
