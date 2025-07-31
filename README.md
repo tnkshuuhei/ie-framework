@@ -31,8 +31,8 @@ Where:
 
 $$
 f_i = \begin{cases}
-1.0 & \text{if full-time (≥40 hr/wk)} \\
-0.5 & \text{if part-time (20-40 hr/wk)}
+1.0 & \text{if full-time } \\
+0.5 & \text{if part-time }
 \end{cases}
 $$
 
@@ -54,31 +54,28 @@ $$s_i(t) = \frac{\sqrt{(d_i^{start} - d_i^{inactive}) \cdot f_i}}{\sum_{j=1}^{n}
 
 ---
 
-- admin create pool on IE contract
-- then initialize pool with config
+### Flow
 
-  - use splits module as reward function
-  - use time control module as an measurement function
-  - use below fomula as an evaluation function
+1. initialize contract
 
-  > Each member’s share of the split contract is calculated using member-specific inputs. There are two parts to the calculation:
-  > Calculate each member’s time*weight: time_weight = SQRT((start_date - months_inactive) * full*or_part_time)
-  > Normalize time_weight as a percentage: split_share = (time_weight / total_time_weights) * 100
-  > This formulation recognizes the local knowledge contributors gain over time, and uses that as a proxy for “value to the commons” and to allocate funding to members. Existing contributor weights get “diluted” as newcomers show up. Continuing contributors get additional weight per month they are active.
-  > Each member’s time-weight is updated onchain every quarter along with an Ethereum address they control to allocate the funding flowing through the mechanism.
+   1. initialize hat, splits contract and module factory
+   2. create/mint Top hat
 
-- once pool is initialized, admin will update evaluation(this will change the share of each recipients on splits contract)
+2. create pool
+   1. create manager hat for each pool
+   2. deploy modules based on inplementation
+   3. `hats.mintHat(managerHatId, moduleAddress);`
+   4. create new splits with recipients data
+3.
 
-```mermaid
-sequenceDiagram
+> Each member’s share of the split contract is calculated using member-specific inputs. There are two parts to the calculation:
+> Calculate each member’s time*weight: time_weight = SQRT((start_date - months_inactive) * full*or_part_time)
+> Normalize time_weight as a percentage: split_share = (time_weight / total_time_weights) * 100
+> This formulation recognizes the local knowledge contributors gain over time, and uses that as a proxy for “value to the commons” and to allocate funding to members. Existing contributor weights get “diluted” as newcomers show up. Continuing contributors get additional weight per month they are active.
+> Each member’s time-weight is updated onchain every quarter along with an Ethereum address they control to allocate the funding flowing through the mechanism.
 
-actor admin as Admin
-participant ie as IE Contract
-participant splits as Splits Contract
-participant eval as Evaluation Contract
-participant time as Time Control Module
+### Sources
 
-actor alice as Alice
-actor bob as Bob
-actor charlie as Charlie
-```
+[https://app.splits.org/accounts/0xd982477216daDD4C258094B071b49D17b6271d66/?chainId=1](https://app.splits.org/accounts/0xd982477216daDD4C258094B071b49D17b6271d66/?chainId=1)
+
+[Time weight](https://protocol-guild.readthedocs.io/en/latest/01-membership.html#time-weight)
