@@ -2,8 +2,8 @@
 pragma solidity >=0.8.29;
 
 import { IHats } from "hats-protocol/Interfaces/IHats.sol";
-import { ISplitMain } from "./interface/ISplitMain.sol";
-import { IHatsModuleFactory } from "./interface/IHatsModuleFactory.sol";
+import { ISplitMain } from "./interfaces/ISplitMain.sol";
+import { IHatsModuleFactory } from "./interfaces/IHatsModuleFactory.sol";
 import { IHatsHatCreatorModule } from "./Hats/IHatCreatorModule.sol";
 import { IHatsTimeControlModule } from "./Hats/ITimeControlModule.sol";
 
