@@ -94,40 +94,25 @@ sequenceDiagram
 
     Note over Admin,Recipients: Pool Creation Process
     Admin->>IE: createPool(encodedData)
-    IE->>IE: Decode pool configuration data
-    IE->>IE: Validate inputs (addresses, arrays, allocations)
+    IE->>IE: Validate pool configuration data
 
-    IE->>Hats: createHat(parentId, metadata, maxSupply, eligibility, toggle, mutable, imageURL)
+    IE->>Hats: Create manager hat
     Hats-->>IE: managerHatId
-    IE->>IE: Store poolToManagerHat[poolId] = managerHatId
 
-    IE->>Factory: createHatsModule(creatorImpl, managerHatId, "", initData, 0)
-    Factory-->>IE: hatCreatorModule
-    IE->>Hats: mintHat(managerHatId, hatCreatorModule)
+    IE->>Factory: Deploy HatCreator & TimeControl modules
+    Factory-->>IE: hatCreatorModule, timeControlModule
 
-    IE->>Factory: createHatsModule(timeControlImpl, managerHatId, "", initData, 0)
-    Factory-->>IE: timeControlModule
-    IE->>Hats: mintHat(managerHatId, timeControlModule)
-
-    IE->>Splits: createSplit(recipients, allocations, 0, admin)
+    IE->>Splits: Create splits contract
     Splits-->>IE: splitsContract
-    IE->>IE: Store splitsContracts[poolId] = splitsContract
 
-    IE->>Creator: createHat(managerHatId, evaluatorMetadata, 1, eligibility, toggle, mutable, "")
-    Creator-->>IE: evaluatorHatId
+    IE->>Creator: Create evaluator & recipient hats
+    Creator-->>IE: evaluatorHatId, recipientHatId
 
-    IE->>Creator: createHat(managerHatId, recipientMetadata, recipients.length, eligibility, toggle, mutable, "")
-    Creator-->>IE: recipientHatId
+    IE->>TimeControl: Mint hats to evaluators & recipients
+		TimeControl ->> Evaluators: mintHat()
+		TimeControl ->> Recipients: mintHat()
 
-    loop For each evaluator
-        IE->>TimeControl: mintHat(evaluatorHatId, evaluator, block.timestamp)
-    end
-
-    loop For each recipient
-        IE->>TimeControl: mintHat(recipientHatId, recipient, block.timestamp)
-    end
-
-    IE->>IE: emit PoolCreated(poolId, managerHatId, splitsContract, evaluatorHatId, recipientHatId, evaluators, recipients)
+    IE->>IE: emit PoolCreated event
 
     Note over Admin,Recipients: Evaluation Process
     Evaluators->>IE: evaluate(poolId)
