@@ -1,8 +1,18 @@
-## e.g. Protocol Guild style of IE
+## TL;DR
+
+Scaffold smartcontract to setup IE. Or you can say "MVIE"
+![scaffold](https://hackmd.io/_uploads/rya7Or5Dex.png)
+
+## Use cases
+
+### e.g. Protocol Guild style IE
+
+![protocol-guild-diagram](https://hackmd.io/_uploads/SJ3caQ5wxg.png)
 
 ```
 ImpactEvaluator {
  foreach round(4m) {
+   claims = "Contributions to Ethereum developments"
    metrics = measure(time, full_or_part_time)
    weight = calculateTimeWeight()
    rewards = split(weight)
@@ -10,11 +20,11 @@ ImpactEvaluator {
 }
 ```
 
-## Time Weight Formula
+#### Time Weight Formula
 
 The time weight for each contributor is calculated using the following formula:
 
-### Individual Time Weight
+#### Individual Time Weight
 
 For contributor $i$ at evaluation round $t$:
 
@@ -54,20 +64,6 @@ $$s_i(t) = \frac{\sqrt{(d_i^{start} - d_i^{inactive}) \cdot f_i}}{\sum_{j=1}^{n}
 
 ---
 
-### Flow
-
-1. initialize contract
-
-   1. initialize hat, splits contract and module factory
-   2. create/mint Top hat
-
-2. create pool
-   1. create manager hat for each pool
-   2. deploy modules based on inplementation
-   3. `hats.mintHat(managerHatId, moduleAddress);`
-   4. create new splits with recipients data
-3.
-
 > Each member’s share of the split contract is calculated using member-specific inputs. There are two parts to the calculation:
 > Calculate each member’s time*weight: time_weight = SQRT((start_date - months_inactive) * full*or_part_time)
 > Normalize time_weight as a percentage: split_share = (time_weight / total_time_weights) * 100
@@ -76,7 +72,7 @@ $$s_i(t) = \frac{\sqrt{(d_i^{start} - d_i^{inactive}) \cdot f_i}}{\sum_{j=1}^{n}
 
 ```mermaid
 sequenceDiagram
-    participant Admin
+    actor Admin
     participant IE as ScaffoldIE Contract
     participant Hats as HatsProtocol
     participant Splits as SplitsContract
@@ -84,7 +80,7 @@ sequenceDiagram
     participant Creator as HatCreatorModule
     participant TimeControl as TimeControlModule
     participant Evaluators
-    participant Recipients
+    actor Recipients
 
     Note over Admin,Recipients: Contract Initialization
     Admin->>IE: constructor(owner, hats, splits, metadata, imageURL, factory, creatorImpl, timeControlImpl)
@@ -116,10 +112,10 @@ sequenceDiagram
 
     Note over Admin,Recipients: Evaluation Process
     Evaluators->>IE: evaluate(poolId)
-    IE->>IE: Validate pool exists
-    IE->>IE: Get splitsContract and recipients from pool
-    IE->>IE: Calculate time-weighted allocations
-    IE->>Splits: updateSplit(splitsContract, accounts, percentAllocations, 0)
+    IE ->> TimeControl: get times
+
+    TimeControl->>TimeControl: Calculate time-weighted allocations
+    TimeControl->>Splits: updateSplit(splitsContract, accounts, percentAllocations, 0)
 
     Note over Admin,Recipients: Time Weight Calculation
     Note over IE: For each contributor i:
@@ -127,8 +123,33 @@ sequenceDiagram
     Note over IE: normalized_share_i = (time_weight_i / Σtime_weights) × 100
 ```
 
-### Sources
+## Hypercerts Usecase
 
-[https://app.splits.org/accounts/0xd982477216daDD4C258094B071b49D17b6271d66/?chainId=1](https://app.splits.org/accounts/0xd982477216daDD4C258094B071b49D17b6271d66/?chainId=1)
+```solidity
+    function getWearerStatus(
+        address _wearer,
+        uint256 /*_hatId */
+    ) public view override returns (bool eligible, bool standing) {
+        uint256 len = ARRAY_LENGTH();
+        IHypercertToken token = IHypercertToken(TOKEN_ADDRESS());
+        uint256[] memory tokenIds = TOKEN_IDS();
+        uint256[] memory minBalances = MIN_BALANCES_OF_UNITS();
 
-[Time weight](https://protocol-guild.readthedocs.io/en/latest/01-membership.html#time-weight)
+        for (uint256 i = 0; i < len; ) {
+            eligible = token.unitsOf(_wearer, tokenIds[i]) >= minBalances[i];
+            if (eligible) break;
+            unchecked {
+                ++i;
+            }
+        }
+        standing = true;
+    }
+```
+
+{%preview https://github.com/tnkshuuhei/HatsEligibilityModules %}
+
+{%preview https://app.splits.org/accounts/0xd982477216daDD4C258094B071b49D17b6271d66/?chainId=1 %}
+
+{%preview https://protocol-guild.readthedocs.io/en/latest/01-membership.html#time-weight %}
+
+{%preview https://docs.hatsprotocol.xyz/for-developers/hats-modules %}
