@@ -6,6 +6,7 @@ import { ISplitMain } from "./interfaces/ISplitMain.sol";
 import { IHatsModuleFactory } from "./interfaces/IHatsModuleFactory.sol";
 import { IHatsHatCreatorModule } from "./Hats/IHatCreatorModule.sol";
 import { IHatsTimeControlModule } from "./Hats/ITimeControlModule.sol";
+import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 
 contract ScaffoldIE {
     // Custom errors
@@ -16,9 +17,19 @@ contract ScaffoldIE {
     error EmptyArray();
     error InvalidMetadata();
 
+    enum RecipientType {
+        FullTime,
+        PartTime
+    }
+
+    struct Recipient {
+        address recipient;
+        RecipientType recipientType;
+    }
+
     struct PoolConfig {
         address admin;
-        address[] recipients;
+        Recipient[] recipients;
         uint32[] initialAllocations;
         address[] evaluators;
     }
@@ -47,6 +58,15 @@ contract ScaffoldIE {
     // poolId => splits contract address
     mapping(uint256 => address) public splitsContracts;
 
+    // TODO: remove this mapping.
+    // this is not necessary for other than protocol guild case.
+
+    // poolId => time control module address
+    mapping(uint256 => address) public poolIdToTimeControlModule;
+
+    // poolId => recipient hat ID
+    mapping(uint256 => uint256) public poolIdToRecipientHat;
+
     event PoolCreated(
         uint256 poolId,
         uint256 managerHatId,
@@ -67,14 +87,6 @@ contract ScaffoldIE {
         address _hatCreatorModuleImpl,
         address _timeControlModuleImpl
     ) {
-        require(_owner != address(0), ZeroAddress());
-        require(_hats != address(0), ZeroAddress());
-        require(_splits != address(0), ZeroAddress());
-        require(_hatsModuleFactory != IHatsModuleFactory(address(0)), ZeroAddress());
-        require(_hatCreatorModuleImpl != address(0), ZeroAddress());
-        require(_timeControlModuleImpl != address(0), ZeroAddress());
-        require(bytes(_topHatMetadata).length > 0, InvalidMetadata());
-
         hats = IHats(_hats);
         splits = ISplitMain(_splits);
 
@@ -86,56 +98,16 @@ contract ScaffoldIE {
 
     // TODO: split into multiple functions
     function createPool(bytes memory _data /*, Module[] memory _modules*/ ) external {
-        require(_data.length > 0, InvalidMetadata());
-
         (
             address admin,
-            address[] memory recipients,
+            Recipient[] memory recipients,
             uint32[] memory initialAllocations,
             string memory managerHatMetadata,
             string memory managerHatImageURL,
             string memory evaluatorHatMetadata,
             string memory recipientHatMetadata,
             address[] memory evaluators
-        ) = abi.decode(_data, (address, address[], uint32[], string, string, string, string, address[]));
-
-        // Validate admin address
-        require(admin != address(0), ZeroAddress());
-
-        // Validate recipients array
-        require(recipients.length > 0, EmptyArray());
-        require(recipients.length == initialAllocations.length, InvalidArrayLength());
-
-        // Validate evaluators array
-        require(evaluators.length > 0, EmptyArray());
-
-        // Validate metadata strings
-        require(bytes(managerHatMetadata).length > 0, InvalidMetadata());
-        require(bytes(evaluatorHatMetadata).length > 0, InvalidMetadata());
-        require(bytes(recipientHatMetadata).length > 0, InvalidMetadata());
-
-        // Validate allocation percentages
-        uint32 totalAllocation = 0;
-        for (uint256 i = 0; i < initialAllocations.length; i++) {
-            totalAllocation += initialAllocations[i];
-        }
-        require(totalAllocation == 10_000, InvalidAllocationPercentage());
-
-        // Validate no duplicate recipients
-        for (uint256 i = 0; i < recipients.length; i++) {
-            require(recipients[i] != address(0), ZeroAddress());
-            for (uint256 j = i + 1; j < recipients.length; j++) {
-                require(recipients[i] != recipients[j], ZeroAddress());
-            }
-        }
-
-        // Validate no duplicate evaluators
-        for (uint256 i = 0; i < evaluators.length; i++) {
-            require(evaluators[i] != address(0), ZeroAddress());
-            for (uint256 j = i + 1; j < evaluators.length; j++) {
-                require(evaluators[i] != evaluators[j], ZeroAddress());
-            }
-        }
+        ) = abi.decode(_data, (address, Recipient[], uint32[], string, string, string, string, address[]));
 
         PoolConfig memory pool = PoolConfig({
             admin: admin,
@@ -171,6 +143,9 @@ contract ScaffoldIE {
         );
         hats.mintHat(managerHatId, timeControlModule);
 
+        // Store the time control module address for this pool
+        poolIdToTimeControlModule[poolCount] = timeControlModule;
+
         // create modules and mint
         // for (uint256 i = 0; i < _modules.length; i++) {
         //     Module memory module = _modules[i];
@@ -180,7 +155,10 @@ contract ScaffoldIE {
         // }
 
         // TODO: make sure that in total initialAllocations is 100%
-        address splitsContract = splits.createSplit(recipients, initialAllocations, 0, admin);
+        // Extract recipient addresses
+
+        address[] memory extractedRecipientAddresses = _extractRecipientAddresses(recipients);
+        address splitsContract = splits.createSplit(extractedRecipientAddresses, initialAllocations, 0, admin);
         splitsContracts[poolCount] = splitsContract;
 
         // create evaluator hat
@@ -205,6 +183,9 @@ contract ScaffoldIE {
             true,
             "" // imageURL
         );
+
+        // Store the recipient hat ID for this pool
+        poolIdToRecipientHat[poolCount] = recipientHatId;
         // mint evaluator hats
         for (uint256 i = 0; i < evaluators.length; i++) {
             address evaluator = evaluators[i];
@@ -213,28 +194,107 @@ contract ScaffoldIE {
 
         // mint recipient hats
         for (uint256 i = 0; i < recipients.length; i++) {
-            address recipient = recipients[i];
+            address recipient = recipients[i].recipient;
             IHatsTimeControlModule(timeControlModule).mintHat(recipientHatId, recipient, block.timestamp);
         }
 
+        // Extract recipient addresses for event
+
         emit PoolCreated(
-            poolCount, managerHatId, splitsContract, evaluatorHatId, recipientHatId, evaluators, recipients
+            poolCount,
+            managerHatId,
+            splitsContract,
+            evaluatorHatId,
+            recipientHatId,
+            evaluators,
+            extractedRecipientAddresses
         );
     }
 
     function evaluate(uint256 _poolId) external {
-        require(_poolId > 0 && _poolId <= poolCount, PoolDoesNotExist());
-
         address splitsContract = splitsContracts[_poolId];
-        require(splitsContract != address(0), ZeroAddress());
+        Recipient[] memory recipients = pools[_poolId].recipients;
 
-        address[] memory accounts = pools[_poolId].recipients;
-        require(accounts.length > 0, EmptyArray());
+        // Extract recipient addresses
+        address[] memory accounts = _extractRecipientAddresses(recipients);
 
-        uint32[] memory percentAllocations;
+        address timeControlModule = poolIdToTimeControlModule[_poolId];
 
-        // TODO: need to calculate percentAllocations based on time weighted allocation with time control module
+        // Calculate time-weighted allocations using Protocol Labs formula
+        uint32[] memory percentAllocations = _calculateTimeWeightedAllocations(_poolId, accounts, timeControlModule);
 
         splits.updateSplit(splitsContract, accounts, percentAllocations, 0);
+    }
+
+    function _calculateTimeWeightedAllocations(
+        uint256 _poolId,
+        address[] memory _recipients,
+        address _timeControlModule
+    )
+        internal
+        view
+        returns (uint32[] memory)
+    {
+        uint256[] memory timeMultipliers = new uint256[](_recipients.length);
+        uint256 totalMultiplier = 0;
+
+        // Get the recipient hat ID for this pool
+        uint256 recipientHatId = _getRecipientHatId(_poolId);
+
+        // Calculate time multipliers for each recipient using Protocol Labs formula (sqrt(wearing_time))
+        for (uint256 i = 0; i < _recipients.length; i++) {
+            uint256 wearingElapsedTime =
+                IHatsTimeControlModule(_timeControlModule).getWearingElapsedTime(_recipients[i], recipientHatId);
+            uint256 multiplier = Math.sqrt(wearingElapsedTime);
+            timeMultipliers[i] = multiplier;
+            totalMultiplier += multiplier;
+        }
+
+        // Convert to percentage allocations (basis points)
+        uint32[] memory percentAllocations = new uint32[](_recipients.length);
+
+        if (totalMultiplier > 0) {
+            for (uint256 i = 0; i < _recipients.length; i++) {
+                // Calculate percentage: (multiplier / totalMultiplier) * 10000 (basis points)
+                percentAllocations[i] = uint32((timeMultipliers[i] * 10_000) / totalMultiplier);
+            }
+        } else {
+            // If no time has been worn, distribute equally
+            uint32 equalAllocation = uint32(10_000 / _recipients.length);
+            for (uint256 i = 0; i < _recipients.length; i++) {
+                percentAllocations[i] = equalAllocation;
+            }
+            // Distribute remainder to first recipient
+            percentAllocations[0] += uint32(10_000 % _recipients.length);
+        }
+
+        return percentAllocations;
+    }
+
+    function _getRecipientHatId(uint256 _poolId) internal view returns (uint256) {
+        uint256 recipientHatId = poolIdToRecipientHat[_poolId];
+        return recipientHatId;
+    }
+
+    function _extractRecipientAddresses(Recipient[] memory recipients) internal pure returns (address[] memory) {
+        address[] memory recipientAddresses = new address[](recipients.length);
+        for (uint256 i = 0; i < recipients.length; i++) {
+            recipientAddresses[i] = recipients[i].recipient;
+        }
+        return recipientAddresses;
+    }
+
+    function _getHatsTimeFrameMultiplier(
+        uint256 _poolId,
+        address _wearer,
+        uint256 _hatId
+    )
+        internal
+        view
+        returns (uint256)
+    {
+        address timeControlModule = poolIdToTimeControlModule[_poolId];
+        uint256 wearingElapsedTime = IHatsTimeControlModule(timeControlModule).getWearingElapsedTime(_wearer, _hatId);
+        return Math.sqrt(wearingElapsedTime);
     }
 }
