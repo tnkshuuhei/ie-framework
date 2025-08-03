@@ -60,7 +60,7 @@ jobs:
         run: "forge config"
 
       - name: "Run the test"
-        run: "pnpm test"
+        run: "pnpm test:sepolia"
 
       - name: "Add test summary"
         run: |

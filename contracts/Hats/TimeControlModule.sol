@@ -3,7 +3,7 @@ pragma solidity ^0.8.24;
 
 import { HatsModule } from "hats-module/src/HatsModule.sol";
 
-contract HatsTimeFrameModule is HatsModule {
+contract HatsTimeControlModule is HatsModule {
     /**
      * @notice Emitted when hat creation authority is granted
      */

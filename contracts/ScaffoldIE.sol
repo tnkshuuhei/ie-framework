@@ -216,19 +216,19 @@ contract ScaffoldIE {
         Recipient[] memory recipients = pools[_poolId].recipients;
 
         // Extract recipient addresses
-        address[] memory accounts = _extractRecipientAddresses(recipients);
+        address[] memory extractedRecipientAddresses = _extractRecipientAddresses(recipients);
 
         address timeControlModule = poolIdToTimeControlModule[_poolId];
 
         // Calculate time-weighted allocations using Protocol Labs formula
-        uint32[] memory percentAllocations = _calculateTimeWeightedAllocations(_poolId, accounts, timeControlModule);
+        uint32[] memory percentAllocations = _calculateTimeWeightedAllocations(_poolId, recipients, timeControlModule);
 
-        splits.updateSplit(splitsContract, accounts, percentAllocations, 0);
+        splits.updateSplit(splitsContract, extractedRecipientAddresses, percentAllocations, 0);
     }
 
     function _calculateTimeWeightedAllocations(
         uint256 _poolId,
-        address[] memory _recipients,
+        Recipient[] memory _recipients,
         address _timeControlModule
     )
         internal
@@ -243,9 +243,11 @@ contract ScaffoldIE {
 
         // Calculate time multipliers for each recipient using Protocol Labs formula (sqrt(wearing_time))
         for (uint256 i = 0; i < _recipients.length; i++) {
-            uint256 wearingElapsedTime =
-                IHatsTimeControlModule(_timeControlModule).getWearingElapsedTime(_recipients[i], recipientHatId);
-            uint256 multiplier = Math.sqrt(wearingElapsedTime);
+            uint256 wearingElapsedTime = IHatsTimeControlModule(_timeControlModule).getWearingElapsedTime(
+                _recipients[i].recipient, recipientHatId
+            );
+            uint256 multiplier =
+                Math.sqrt(wearingElapsedTime * (_recipients[i].recipientType == RecipientType.FullTime ? 100 : 50));
             timeMultipliers[i] = multiplier;
             totalMultiplier += multiplier;
         }

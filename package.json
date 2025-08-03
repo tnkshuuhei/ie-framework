@@ -25,8 +25,9 @@
     "setup": "pnpm install && forge install && cp .env.example .env",
     "clean": "rm -rf cache out",
     "build": "forge clean && forge build",
-    "test": "forge clean && forge test",
+    "test": "forge clean && forge test ",
     "coverage": "forge clean && forge coverage",
+    "test:sepolia": "forge clean && forge test --rpc-url sepolia",
     "deploy:UUPS-sepolia": "forge clean && forge script script/DeployUUPS.s.sol --rpc-url sepolia --broadcast --etherscan-api-key $ETHERSCAN_KEY --verify",
     "upgrade": "forge clean && forge script script/UpgradeUUPS.s.sol --rpc-url sepolia --broadcast --etherscan-api-key $ETHERSCAN_KEY --verify"
   }
