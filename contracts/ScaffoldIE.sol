@@ -47,6 +47,8 @@ contract ScaffoldIE {
     IHatsHatCreatorModule public hatCreatorModuleImpl;
     IHatsTimeControlModule public timeControlModuleImpl;
 
+    address public owner;
+
     uint256 public poolCount;
     uint256 public topHatId;
 
@@ -75,7 +77,6 @@ contract ScaffoldIE {
         uint256 evaluatorHatId,
         uint256 recipientHatId
     );
-    // https://github.com/hats-protocol/hats-protocol/blob/b23340f825a2cdf9f5758462f8161d7076ad7f6f/src/Hats.sol#L168
 
     constructor(
         address _owner,
@@ -90,7 +91,12 @@ contract ScaffoldIE {
         hats = IHats(_hats);
         splits = ISplitMain(_splits);
 
+        // mint tophat to this contract
+        // https://github.com/hats-protocol/hats-protocol/blob/b23340f825a2cdf9f5758462f8161d7076ad7f6f/src/Hats.sol#L168
         topHatId = hats.mintTopHat(address(this), _topHatMetadata, _topHatImageURL);
+        // TODO: manage owner address on tophat and correcponding hat
+        owner = _owner;
+
         hatsModuleFactory = _hatsModuleFactory;
         hatCreatorModuleImpl = IHatsHatCreatorModule(_hatCreatorModuleImpl);
         timeControlModuleImpl = IHatsTimeControlModule(_timeControlModuleImpl);
@@ -151,7 +157,7 @@ contract ScaffoldIE {
         // Extract recipient addresses
 
         address[] memory extractedRecipientAddresses = _extractRecipientAddresses(recipients);
-        address splitsContract = splits.createSplit(extractedRecipientAddresses, initialAllocations, 0, admin);
+        address splitsContract = splits.createSplit(extractedRecipientAddresses, initialAllocations, 0, address(this));
         poolIdToSplitsContract[poolCount] = splitsContract;
 
         // create evaluator hat
@@ -205,7 +211,7 @@ contract ScaffoldIE {
         return poolCount;
     }
 
-    function evaluate(uint256 _poolId) external {
+    function evaluate(uint256 _poolId) external returns (uint32[] memory) {
         address splitsContract = poolIdToSplitsContract[_poolId];
         Recipient[] memory recipients = pools[_poolId].recipients;
 
@@ -218,6 +224,7 @@ contract ScaffoldIE {
         uint32[] memory percentAllocations = _calculateTimeWeightedAllocations(_poolId, recipients, timeControlModule);
 
         splits.updateSplit(splitsContract, extractedRecipientAddresses, percentAllocations, 0);
+        return percentAllocations;
     }
 
     function _calculateTimeWeightedAllocations(
@@ -250,18 +257,25 @@ contract ScaffoldIE {
         uint32[] memory percentAllocations = new uint32[](_recipients.length);
 
         if (totalMultiplier > 0) {
+            uint256 totalAllocated = 0;
             for (uint256 i = 0; i < _recipients.length; i++) {
-                // Calculate percentage: (multiplier / totalMultiplier) * 10000 (basis points)
-                percentAllocations[i] = uint32((timeMultipliers[i] * 10_000) / totalMultiplier);
+                // Calculate percentage using OpenZeppelin's mulDiv for better precision
+                // (multiplier * 1e6) / totalMultiplier
+                percentAllocations[i] = uint32(Math.mulDiv(timeMultipliers[i], 1_000_000, totalMultiplier));
+                totalAllocated += percentAllocations[i];
+            }
+            // Distribute remainder to first recipient to ensure sum equals 1_000_000
+            if (totalAllocated < 1_000_000) {
+                percentAllocations[0] += uint32(1_000_000 - totalAllocated);
             }
         } else {
             // If no time has been worn, distribute equally
-            uint32 equalAllocation = uint32(10_000 / _recipients.length);
+            uint32 equalAllocation = uint32(1_000_000 / _recipients.length);
             for (uint256 i = 0; i < _recipients.length; i++) {
                 percentAllocations[i] = equalAllocation;
             }
             // Distribute remainder to first recipient
-            percentAllocations[0] += uint32(10_000 % _recipients.length);
+            percentAllocations[0] += uint32(1_000_000 % _recipients.length);
         }
 
         return percentAllocations;

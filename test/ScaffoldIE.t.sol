@@ -20,14 +20,14 @@ contract ScaffoldIETest is Test {
     IHats public hats;
     ISplitMain public splits;
 
+    address public currentPrankee;
     address public creatorModuleImpl;
     address public timeControlModuleImpl;
     address public owner = makeAddr("owner");
 
-    address public alice = makeAddr("alice");
-    address public bob = makeAddr("bob");
-    address public carl = makeAddr("carl");
-
+    address public recipient1 = address(0x1);
+    address public recipient2 = address(0x2);
+    address public recipient3 = address(0x3);
     address public evaluator1 = makeAddr("evaluator1");
     address public evaluator2 = makeAddr("evaluator2");
     address public evaluator3 = makeAddr("evaluator3");
@@ -57,11 +57,6 @@ contract ScaffoldIETest is Test {
     }
 
     function testCreatePool() external {
-        // Create addresses in ascending order to satisfy Split contract requirements
-        address recipient1 = address(0x1);
-        address recipient2 = address(0x2);
-        address recipient3 = address(0x3);
-
         ScaffoldIE.Recipient[] memory recipients = new ScaffoldIE.Recipient[](3);
         recipients[0] =
             ScaffoldIE.Recipient({ recipient: recipient1, recipientType: ScaffoldIE.RecipientType.FullTime });
@@ -98,7 +93,23 @@ contract ScaffoldIETest is Test {
 
         address splitsContract = scaffoldIE.poolIdToSplitsContract(poolId);
         address controller = splits.getController(splitsContract);
-        assertEq(controller, owner);
+        assertEq(controller, address(scaffoldIE));
+        vm.stopPrank();
+    }
+
+    function testEvaluate() external {
+        uint256 poolId = _createPool(owner);
+
+        // 1month
+        vm.warp(block.timestamp + 30 * 86_400);
+
+        vm.startPrank(evaluator1);
+
+        uint32[] memory allocations = scaffoldIE.evaluate(poolId);
+
+        assertEq(allocations[0] > allocations[1], true);
+        assertEq(allocations[2] > allocations[1], true);
+
         vm.stopPrank();
     }
 
@@ -117,6 +128,46 @@ contract ScaffoldIETest is Test {
             hatsModuleFactory = IHatsModuleFactory(0x0a3f85fa597B6a967271286aA0724811acDF5CD9);
             hats = IHats(0x3bc1A0Ad72417f2d411118085256fC53CBdDd137);
             splits = ISplitMain(0x54E4a6014D36c381fC43b7E24A1492F556139a6F);
+        }
+    }
+
+    function _createPool(address _prankee) internal prankception(_prankee) returns (uint256) {
+        ScaffoldIE.Recipient[] memory recipients = new ScaffoldIE.Recipient[](3);
+        recipients[0] =
+            ScaffoldIE.Recipient({ recipient: recipient1, recipientType: ScaffoldIE.RecipientType.FullTime });
+        recipients[1] =
+            ScaffoldIE.Recipient({ recipient: recipient2, recipientType: ScaffoldIE.RecipientType.PartTime });
+        recipients[2] =
+            ScaffoldIE.Recipient({ recipient: recipient3, recipientType: ScaffoldIE.RecipientType.FullTime });
+
+        uint32[] memory initialAllocations = new uint32[](3);
+        initialAllocations[0] = 200_000; // 20%
+        initialAllocations[1] = 300_000; // 30%
+        initialAllocations[2] = 500_000; // 50%
+
+        bytes memory data = abi.encode(
+            owner,
+            recipients,
+            initialAllocations,
+            "ipfs://ManagerHatMetadata",
+            "ipfs://ManagerHatImageURL",
+            "ipfs://EvaluatorHatMetadata",
+            "ipfs://RecipientHatMetadata",
+            evaluators
+        );
+
+        uint256 poolId = scaffoldIE.createPool(data);
+        return poolId;
+    }
+
+    modifier prankception(address prankee) {
+        address prankBefore = currentPrankee;
+        vm.stopPrank();
+        vm.startPrank(prankee);
+        _;
+        vm.stopPrank();
+        if (prankBefore != address(0)) {
+            vm.startPrank(prankBefore);
         }
     }
 }
