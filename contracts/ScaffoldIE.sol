@@ -7,34 +7,9 @@ import { IHatsModuleFactory } from "./interfaces/IHatsModuleFactory.sol";
 import { IHatsHatCreatorModule } from "./Hats/IHatCreatorModule.sol";
 import { IHatsTimeControlModule } from "./Hats/ITimeControlModule.sol";
 import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
+import { IScaffoldIE } from "./interfaces/IScaffoldIE.sol";
 
-contract ScaffoldIE {
-    // Custom errors
-    error ZeroAddress();
-    error InvalidArrayLength();
-    error InvalidAllocationPercentage();
-    error PoolDoesNotExist();
-    error EmptyArray();
-    error InvalidMetadata();
-
-    enum RecipientType {
-        FullTime,
-        PartTime
-    }
-
-    struct Recipient {
-        address recipient;
-        RecipientType recipientType;
-    }
-
-    struct PoolConfig {
-        address admin;
-        Recipient[] recipients;
-        uint32[] initialAllocations;
-        address[] evaluators;
-        address splitsContract;
-    }
-
+contract ScaffoldIE is IScaffoldIE {
     struct Module {
         address impl;
         uint256 hatId;
@@ -56,7 +31,7 @@ contract ScaffoldIE {
     mapping(uint256 => PoolConfig) public pools;
 
     // poolId => managerHatId
-    mapping(uint256 => uint256) public poolToManagerHat;
+    mapping(uint256 => uint256) public poolIdToManagerHat;
 
     // poolId => splits contract address
     mapping(uint256 => address) public poolIdToSplitsContract;
@@ -69,14 +44,6 @@ contract ScaffoldIE {
 
     // poolId => recipient hat ID
     mapping(uint256 => uint256) public poolIdToRecipientHat;
-
-    event PoolCreated(
-        uint256 poolId,
-        uint256 managerHatId,
-        address indexed splitsContract,
-        uint256 evaluatorHatId,
-        uint256 recipientHatId
-    );
 
     constructor(
         address _owner,
@@ -128,7 +95,7 @@ contract ScaffoldIE {
             true,
             managerHatImageURL
         );
-        poolToManagerHat[poolCount] = managerHatId;
+        poolIdToManagerHat[poolCount] = managerHatId;
 
         // deploy hat creator module and mint it to the manager hat
         address hatCreatorModule = hatsModuleFactory.createHatsModule(
@@ -225,6 +192,34 @@ contract ScaffoldIE {
 
         splits.updateSplit(splitsContract, extractedRecipientAddresses, percentAllocations, 0);
         return percentAllocations;
+    }
+
+    function getPoolIdToTimeControlModule(uint256 _poolId) external view returns (address) {
+        return poolIdToTimeControlModule[_poolId];
+    }
+
+    function getPoolIdToRecipientHat(uint256 _poolId) external view returns (uint256) {
+        return poolIdToRecipientHat[_poolId];
+    }
+
+    function getPoolIdToSplitsContract(uint256 _poolId) external view returns (address) {
+        return poolIdToSplitsContract[_poolId];
+    }
+
+    function getPoolIdToManagerHat(uint256 _poolId) external view returns (uint256) {
+        return poolIdToManagerHat[_poolId];
+    }
+
+    function getHatsModuleFactory() external view returns (address) {
+        return address(hatsModuleFactory);
+    }
+
+    function getHatCreatorModuleImpl() external view returns (address) {
+        return address(hatCreatorModuleImpl);
+    }
+
+    function getTimeControlModuleImpl() external view returns (address) {
+        return address(timeControlModuleImpl);
     }
 
     function _calculateTimeWeightedAllocations(

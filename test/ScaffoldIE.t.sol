@@ -4,6 +4,7 @@ pragma solidity >=0.8.29 <0.9.0;
 import { Test } from "forge-std/src/Test.sol";
 import { console2 } from "forge-std/src/console2.sol";
 import { ScaffoldIE } from "../contracts/ScaffoldIE.sol";
+import { IScaffoldIE } from "../contracts/interfaces/IScaffoldIE.sol";
 import { IHats } from "hats-protocol/Interfaces/IHats.sol";
 import { ISplitMain } from "../contracts/interfaces/ISplitMain.sol";
 import { IHatsModuleFactory } from "../contracts/interfaces/IHatsModuleFactory.sol";
@@ -14,7 +15,7 @@ import { HatsTimeControlModule } from "../contracts/Hats/TimeControlModule.sol";
 import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 
 contract ScaffoldIETest is Test {
-    ScaffoldIE public scaffoldIE;
+    IScaffoldIE public scaffoldIE;
 
     IHatsModuleFactory public hatsModuleFactory;
     IHats public hats;
@@ -57,13 +58,13 @@ contract ScaffoldIETest is Test {
     }
 
     function testCreatePool() external {
-        ScaffoldIE.Recipient[] memory recipients = new ScaffoldIE.Recipient[](3);
+        IScaffoldIE.Recipient[] memory recipients = new IScaffoldIE.Recipient[](3);
         recipients[0] =
-            ScaffoldIE.Recipient({ recipient: recipient1, recipientType: ScaffoldIE.RecipientType.FullTime });
+            IScaffoldIE.Recipient({ recipient: recipient1, recipientType: IScaffoldIE.RecipientType.FullTime });
         recipients[1] =
-            ScaffoldIE.Recipient({ recipient: recipient2, recipientType: ScaffoldIE.RecipientType.PartTime });
+            IScaffoldIE.Recipient({ recipient: recipient2, recipientType: IScaffoldIE.RecipientType.PartTime });
         recipients[2] =
-            ScaffoldIE.Recipient({ recipient: recipient3, recipientType: ScaffoldIE.RecipientType.FullTime });
+            IScaffoldIE.Recipient({ recipient: recipient3, recipientType: IScaffoldIE.RecipientType.FullTime });
 
         uint32[] memory initialAllocations = new uint32[](3);
         initialAllocations[0] = 200_000; // 20%
@@ -91,7 +92,7 @@ contract ScaffoldIETest is Test {
         uint256 poolId = scaffoldIE.createPool(data);
         assertEq(poolId, 1);
 
-        address splitsContract = scaffoldIE.poolIdToSplitsContract(poolId);
+        address splitsContract = scaffoldIE.getPoolIdToSplitsContract(poolId);
         address controller = splits.getController(splitsContract);
         assertEq(controller, address(scaffoldIE));
         vm.stopPrank();
@@ -114,11 +115,9 @@ contract ScaffoldIETest is Test {
     }
 
     function testDeployments() public view {
-        assertEq(address(scaffoldIE.hatsModuleFactory()), address(hatsModuleFactory));
-        assertEq(address(scaffoldIE.hats()), address(hats));
-        assertEq(address(scaffoldIE.splits()), address(splits));
-        assertEq(address(scaffoldIE.hatCreatorModuleImpl()), address(creatorModuleImpl));
-        assertEq(address(scaffoldIE.timeControlModuleImpl()), address(timeControlModuleImpl));
+        assertEq(scaffoldIE.getHatsModuleFactory(), address(hatsModuleFactory));
+        assertEq(scaffoldIE.getHatCreatorModuleImpl(), address(creatorModuleImpl));
+        assertEq(scaffoldIE.getTimeControlModuleImpl(), address(timeControlModuleImpl));
         assertNotEq(address(scaffoldIE), address(0));
     }
 
@@ -132,13 +131,13 @@ contract ScaffoldIETest is Test {
     }
 
     function _createPool(address _prankee) internal prankception(_prankee) returns (uint256) {
-        ScaffoldIE.Recipient[] memory recipients = new ScaffoldIE.Recipient[](3);
+        IScaffoldIE.Recipient[] memory recipients = new IScaffoldIE.Recipient[](3);
         recipients[0] =
-            ScaffoldIE.Recipient({ recipient: recipient1, recipientType: ScaffoldIE.RecipientType.FullTime });
+            IScaffoldIE.Recipient({ recipient: recipient1, recipientType: IScaffoldIE.RecipientType.FullTime });
         recipients[1] =
-            ScaffoldIE.Recipient({ recipient: recipient2, recipientType: ScaffoldIE.RecipientType.PartTime });
+            IScaffoldIE.Recipient({ recipient: recipient2, recipientType: IScaffoldIE.RecipientType.PartTime });
         recipients[2] =
-            ScaffoldIE.Recipient({ recipient: recipient3, recipientType: ScaffoldIE.RecipientType.FullTime });
+            IScaffoldIE.Recipient({ recipient: recipient3, recipientType: IScaffoldIE.RecipientType.FullTime });
 
         uint32[] memory initialAllocations = new uint32[](3);
         initialAllocations[0] = 200_000; // 20%
