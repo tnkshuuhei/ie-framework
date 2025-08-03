@@ -57,7 +57,7 @@ contract ScaffoldIETest is Test {
         );
     }
 
-    function testCreatePool() external {
+    function testCreateIE() external {
         IScaffoldIE.Recipient[] memory recipients = new IScaffoldIE.Recipient[](3);
         recipients[0] =
             IScaffoldIE.Recipient({ recipient: recipient1, recipientType: IScaffoldIE.RecipientType.FullTime });
@@ -89,7 +89,7 @@ contract ScaffoldIETest is Test {
 
         vm.startPrank(owner);
 
-        uint256 poolId = scaffoldIE.createPool(data);
+        uint256 poolId = scaffoldIE.createIE(data);
         assertEq(poolId, 1);
 
         address splitsContract = scaffoldIE.getPoolIdToSplitsContract(poolId);
@@ -155,7 +155,7 @@ contract ScaffoldIETest is Test {
             evaluators
         );
 
-        uint256 poolId = scaffoldIE.createPool(data);
+        uint256 poolId = scaffoldIE.createIE(data);
         return poolId;
     }
 

@@ -10,12 +10,6 @@ import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 import { IScaffoldIE } from "./interfaces/IScaffoldIE.sol";
 
 contract ScaffoldIE is IScaffoldIE {
-    struct Module {
-        address impl;
-        uint256 hatId;
-        bytes initData;
-    }
-
     IHats public hats;
     ISplitMain public splits;
     IHatsModuleFactory public hatsModuleFactory;
@@ -70,7 +64,14 @@ contract ScaffoldIE is IScaffoldIE {
     }
 
     // TODO: split into multiple functions
-    function createPool(bytes memory _data /*, Module[] memory _modules*/ ) external returns (uint256) {
+
+    function createIE(bytes memory _data /*, Module[] memory _modules*/ ) external returns (uint256) {
+        uint256 poolId = _createIE(_data);
+
+        return poolId;
+    }
+
+    function _createIE(bytes memory _data /*, Module[] memory _modules*/ ) internal returns (uint256) {
         (
             address admin,
             Recipient[] memory recipients,

@@ -7,6 +7,12 @@ interface IScaffoldIE {
         PartTime
     }
 
+    struct Module {
+        address impl;
+        uint256 hatId;
+        bytes initData;
+    }
+
     struct Recipient {
         address recipient;
         RecipientType recipientType;
@@ -28,7 +34,7 @@ interface IScaffoldIE {
         address splitsContract;
     }
 
-    function createPool(bytes memory _data) external returns (uint256);
+    function createIE(bytes memory _data) external returns (uint256);
     function evaluate(uint256 _poolId) external returns (uint32[] memory);
 
     function getHatsModuleFactory() external view returns (address);
