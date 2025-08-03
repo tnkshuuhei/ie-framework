@@ -17,7 +17,7 @@ abstract contract BaseIEStrategy {
     // poolId ++;
     // emit PoolCreated();
     // return poolId;
-    function createIE(bytes memory _data) external {
+    function createIE(bytes memory _data) external virtual {
         _beforeCreateIE(_data);
         _createIE(_data);
         _afterCreateIE(_data);
@@ -30,7 +30,7 @@ abstract contract BaseIEStrategy {
     function _createIE(bytes memory _data) internal virtual { }
 
     /// @param _data The data for the evaluation
-    function evaluate(bytes memory _data) external returns (bytes memory result) {
+    function evaluate(bytes memory _data) external virtual returns (bytes memory result) {
         _beforeEvaluation(_data);
         result = _evaluate(_data);
         _afterEvaluation(_data);
