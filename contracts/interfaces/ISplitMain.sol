@@ -37,4 +37,6 @@ interface ISplitMain {
         address distributorAddress
     )
         external;
+
+    function getController(address split) external view returns (address);
 }

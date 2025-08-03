@@ -32,6 +32,7 @@ contract ScaffoldIE {
         Recipient[] recipients;
         uint32[] initialAllocations;
         address[] evaluators;
+        address splitsContract;
     }
 
     struct Module {
@@ -46,7 +47,7 @@ contract ScaffoldIE {
     IHatsHatCreatorModule public hatCreatorModuleImpl;
     IHatsTimeControlModule public timeControlModuleImpl;
 
-    uint256 private poolCount;
+    uint256 public poolCount;
     uint256 public topHatId;
 
     // poolId => poolConfig
@@ -56,7 +57,7 @@ contract ScaffoldIE {
     mapping(uint256 => uint256) public poolToManagerHat;
 
     // poolId => splits contract address
-    mapping(uint256 => address) public splitsContracts;
+    mapping(uint256 => address) public poolIdToSplitsContract;
 
     // TODO: remove this mapping.
     // this is not necessary for other than protocol guild case.
@@ -70,12 +71,11 @@ contract ScaffoldIE {
     event PoolCreated(
         uint256 poolId,
         uint256 managerHatId,
-        address splitsContract,
+        address indexed splitsContract,
         uint256 evaluatorHatId,
-        uint256 recipientHatId,
-        address[] evaluators,
-        address[] recipients
+        uint256 recipientHatId
     );
+    // https://github.com/hats-protocol/hats-protocol/blob/b23340f825a2cdf9f5758462f8161d7076ad7f6f/src/Hats.sol#L168
 
     constructor(
         address _owner,
@@ -90,14 +90,14 @@ contract ScaffoldIE {
         hats = IHats(_hats);
         splits = ISplitMain(_splits);
 
-        topHatId = hats.mintTopHat(_owner, _topHatMetadata, _topHatImageURL);
+        topHatId = hats.mintTopHat(address(this), _topHatMetadata, _topHatImageURL);
         hatsModuleFactory = _hatsModuleFactory;
         hatCreatorModuleImpl = IHatsHatCreatorModule(_hatCreatorModuleImpl);
         timeControlModuleImpl = IHatsTimeControlModule(_timeControlModuleImpl);
     }
 
     // TODO: split into multiple functions
-    function createPool(bytes memory _data /*, Module[] memory _modules*/ ) external {
+    function createPool(bytes memory _data /*, Module[] memory _modules*/ ) external returns (uint256) {
         (
             address admin,
             Recipient[] memory recipients,
@@ -109,14 +109,7 @@ contract ScaffoldIE {
             address[] memory evaluators
         ) = abi.decode(_data, (address, Recipient[], uint32[], string, string, string, string, address[]));
 
-        PoolConfig memory pool = PoolConfig({
-            admin: admin,
-            recipients: recipients,
-            initialAllocations: initialAllocations,
-            evaluators: evaluators
-        });
         poolCount++;
-        pools[poolCount] = pool;
 
         // create manager hats under the top hat
         uint256 managerHatId = hats.createHat(
@@ -159,14 +152,14 @@ contract ScaffoldIE {
 
         address[] memory extractedRecipientAddresses = _extractRecipientAddresses(recipients);
         address splitsContract = splits.createSplit(extractedRecipientAddresses, initialAllocations, 0, admin);
-        splitsContracts[poolCount] = splitsContract;
+        poolIdToSplitsContract[poolCount] = splitsContract;
 
         // create evaluator hat
 
         uint256 evaluatorHatId = IHatsHatCreatorModule(hatCreatorModule).createHat(
             managerHatId,
             evaluatorHatMetadata,
-            1,
+            uint32(evaluators.length),
             0x0000000000000000000000000000000000004A75, // eligibility (TODO: change to actual eligibility)
             0x0000000000000000000000000000000000004A75, // toggle (TODO: change to actual toggle)
             true,
@@ -198,21 +191,22 @@ contract ScaffoldIE {
             IHatsTimeControlModule(timeControlModule).mintHat(recipientHatId, recipient, block.timestamp);
         }
 
+        PoolConfig memory pool = PoolConfig({
+            admin: admin,
+            recipients: recipients,
+            initialAllocations: initialAllocations,
+            evaluators: evaluators,
+            splitsContract: splitsContract
+        });
+        pools[poolCount] = pool;
         // Extract recipient addresses for event
 
-        emit PoolCreated(
-            poolCount,
-            managerHatId,
-            splitsContract,
-            evaluatorHatId,
-            recipientHatId,
-            evaluators,
-            extractedRecipientAddresses
-        );
+        emit PoolCreated(poolCount, managerHatId, splitsContract, evaluatorHatId, recipientHatId);
+        return poolCount;
     }
 
     function evaluate(uint256 _poolId) external {
-        address splitsContract = splitsContracts[_poolId];
+        address splitsContract = poolIdToSplitsContract[_poolId];
         Recipient[] memory recipients = pools[_poolId].recipients;
 
         // Extract recipient addresses
