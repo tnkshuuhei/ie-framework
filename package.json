@@ -1,6 +1,6 @@
 {
-  "name": "@tnkshuuhei/foundry-template",
-  "description": "Template repo for creating smart contracts with Hardhat and Foundry",
+  "name": "ScaffoldIE",
+  "description": "A set of smart contracts for Impact Evaluator",
   "version": "1.0.0",
   "author": {
     "name": "Shuhei Tanaka",
@@ -12,7 +12,8 @@
     "smart contract",
     "ethereum",
     "solidity",
-    "blockchain"
+    "blockchain",
+    "impact-evaluator"
   ],
   "private": true,
   "license": "MIT",
