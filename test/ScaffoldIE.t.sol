@@ -5,6 +5,7 @@ import { Test } from "forge-std/src/Test.sol";
 import { console2 } from "forge-std/src/console2.sol";
 import { ScaffoldIE } from "../contracts/ScaffoldIE.sol";
 import { IScaffoldIE } from "../contracts/interfaces/IScaffoldIE.sol";
+import { ProtocolGuild } from "../contracts/IEstrategies/ProtocolGuild.sol";
 import { IHats } from "hats-protocol/Interfaces/IHats.sol";
 import { ISplitMain } from "../contracts/interfaces/ISplitMain.sol";
 import { IHatsModuleFactory } from "../contracts/interfaces/IHatsModuleFactory.sol";
@@ -14,8 +15,10 @@ import { HatsHatCreatorModule } from "../contracts/Hats/HatCreatorModule.sol";
 import { HatsTimeControlModule } from "../contracts/Hats/TimeControlModule.sol";
 import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 
+// TODO: fix test
 contract ScaffoldIETest is Test {
     IScaffoldIE public scaffoldIE;
+    ProtocolGuild public protocolGuild;
 
     IHatsModuleFactory public hatsModuleFactory;
     IHats public hats;
@@ -35,9 +38,7 @@ contract ScaffoldIETest is Test {
 
     address[] public evaluators = [evaluator1, evaluator2];
 
-    event PoolCreated(
-        uint256 poolId, uint256 managerHatId, address splitsContract, uint256 evaluatorHatId, uint256 recipientHatId
-    );
+    event PoolCreated(uint256 poolId, address indexed strategy);
 
     function setUp() public {
         configureChain();
@@ -45,36 +46,26 @@ contract ScaffoldIETest is Test {
         creatorModuleImpl = address(new HatsHatCreatorModule("v0.1.0"));
         timeControlModuleImpl = address(new HatsTimeControlModule("v0.1.0"));
 
-        scaffoldIE = new ScaffoldIE(
-            owner,
-            address(hats),
-            address(splits),
-            "ipfs://TopHatMetadata",
-            "ipfs://TopHatImageURL",
-            hatsModuleFactory,
-            address(creatorModuleImpl),
-            address(timeControlModuleImpl)
-        );
+        scaffoldIE =
+            new ScaffoldIE(owner, address(hats), address(splits), hatsModuleFactory, address(creatorModuleImpl));
+
+        protocolGuild = new ProtocolGuild(address(scaffoldIE));
     }
 
     function testCreateIE() external {
-        IScaffoldIE.Recipient[] memory recipients = new IScaffoldIE.Recipient[](3);
+        ProtocolGuild.Recipient[] memory recipients = new ProtocolGuild.Recipient[](3);
         recipients[0] =
-            IScaffoldIE.Recipient({ recipient: recipient1, recipientType: IScaffoldIE.RecipientType.FullTime });
+            ProtocolGuild.Recipient({ recipient: recipient1, recipientType: ProtocolGuild.RecipientType.FullTime });
         recipients[1] =
-            IScaffoldIE.Recipient({ recipient: recipient2, recipientType: IScaffoldIE.RecipientType.PartTime });
+            ProtocolGuild.Recipient({ recipient: recipient2, recipientType: ProtocolGuild.RecipientType.PartTime });
         recipients[2] =
-            IScaffoldIE.Recipient({ recipient: recipient3, recipientType: IScaffoldIE.RecipientType.FullTime });
-
-        uint32[] memory initialAllocations = new uint32[](3);
-        initialAllocations[0] = 200_000; // 20%
-        initialAllocations[1] = 300_000; // 30%
-        initialAllocations[2] = 500_000; // 50%
+            ProtocolGuild.Recipient({ recipient: recipient3, recipientType: ProtocolGuild.RecipientType.FullTime });
 
         bytes memory data = abi.encode(
-            owner,
+            timeControlModuleImpl,
             recipients,
-            initialAllocations,
+            "ipfs://TopHatMetadata",
+            "ipfs://TopHatImageURL",
             "ipfs://ManagerHatMetadata",
             "ipfs://ManagerHatImageURL",
             "ipfs://EvaluatorHatMetadata",
@@ -82,19 +73,14 @@ contract ScaffoldIETest is Test {
             evaluators
         );
 
-        address[] memory extractedRecipients = new address[](3);
-        extractedRecipients[0] = recipient1;
-        extractedRecipients[1] = recipient2;
-        extractedRecipients[2] = recipient3;
-
         vm.startPrank(owner);
 
-        uint256 poolId = scaffoldIE.createIE(data);
+        (, uint256 poolId) = scaffoldIE.createIE(data, address(protocolGuild));
         assertEq(poolId, 1);
 
-        address splitsContract = scaffoldIE.getPoolIdToSplitsContract(poolId);
+        address splitsContract = protocolGuild.splitsContract();
         address controller = splits.getController(splitsContract);
-        assertEq(controller, address(scaffoldIE));
+        assertEq(controller, address(protocolGuild));
         vm.stopPrank();
     }
 
@@ -106,7 +92,17 @@ contract ScaffoldIETest is Test {
 
         vm.startPrank(evaluator1);
 
-        uint32[] memory allocations = scaffoldIE.evaluate(poolId);
+        // Create recipients data for evaluation
+        ProtocolGuild.Recipient[] memory recipients = new ProtocolGuild.Recipient[](3);
+        recipients[0] =
+            ProtocolGuild.Recipient({ recipient: recipient1, recipientType: ProtocolGuild.RecipientType.FullTime });
+        recipients[1] =
+            ProtocolGuild.Recipient({ recipient: recipient2, recipientType: ProtocolGuild.RecipientType.PartTime });
+        recipients[2] =
+            ProtocolGuild.Recipient({ recipient: recipient3, recipientType: ProtocolGuild.RecipientType.FullTime });
+
+        bytes memory result = scaffoldIE.evaluate(poolId, "0x");
+        (, uint32[] memory allocations) = abi.decode(result, (address[], uint32[]));
 
         assertEq(allocations[0] > allocations[1], true);
         assertEq(allocations[2] > allocations[1], true);
@@ -117,7 +113,6 @@ contract ScaffoldIETest is Test {
     function testDeployments() public view {
         assertEq(scaffoldIE.getHatsModuleFactory(), address(hatsModuleFactory));
         assertEq(scaffoldIE.getHatCreatorModuleImpl(), address(creatorModuleImpl));
-        assertEq(scaffoldIE.getTimeControlModuleImpl(), address(timeControlModuleImpl));
         assertNotEq(address(scaffoldIE), address(0));
     }
 
@@ -131,23 +126,19 @@ contract ScaffoldIETest is Test {
     }
 
     function _createPool(address _prankee) internal prankception(_prankee) returns (uint256) {
-        IScaffoldIE.Recipient[] memory recipients = new IScaffoldIE.Recipient[](3);
+        ProtocolGuild.Recipient[] memory recipients = new ProtocolGuild.Recipient[](3);
         recipients[0] =
-            IScaffoldIE.Recipient({ recipient: recipient1, recipientType: IScaffoldIE.RecipientType.FullTime });
+            ProtocolGuild.Recipient({ recipient: recipient1, recipientType: ProtocolGuild.RecipientType.FullTime });
         recipients[1] =
-            IScaffoldIE.Recipient({ recipient: recipient2, recipientType: IScaffoldIE.RecipientType.PartTime });
+            ProtocolGuild.Recipient({ recipient: recipient2, recipientType: ProtocolGuild.RecipientType.PartTime });
         recipients[2] =
-            IScaffoldIE.Recipient({ recipient: recipient3, recipientType: IScaffoldIE.RecipientType.FullTime });
-
-        uint32[] memory initialAllocations = new uint32[](3);
-        initialAllocations[0] = 200_000; // 20%
-        initialAllocations[1] = 300_000; // 30%
-        initialAllocations[2] = 500_000; // 50%
+            ProtocolGuild.Recipient({ recipient: recipient3, recipientType: ProtocolGuild.RecipientType.FullTime });
 
         bytes memory data = abi.encode(
-            owner,
+            timeControlModuleImpl,
             recipients,
-            initialAllocations,
+            "ipfs://TopHatMetadata",
+            "ipfs://TopHatImageURL",
             "ipfs://ManagerHatMetadata",
             "ipfs://ManagerHatImageURL",
             "ipfs://EvaluatorHatMetadata",
@@ -155,7 +146,7 @@ contract ScaffoldIETest is Test {
             evaluators
         );
 
-        uint256 poolId = scaffoldIE.createIE(data);
+        (, uint256 poolId) = scaffoldIE.createIE(data, address(protocolGuild));
         return poolId;
     }
 

@@ -11,8 +11,8 @@ import { IHatsTimeControlModule } from "../Hats/ITimeControlModule.sol";
 import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 import { IScaffoldIE } from "../interfaces/IScaffoldIE.sol";
 
-contract ProtocolGuild is BaseIEStrategy, IStrategy {
-    constructor(address _scaffoldIE) BaseIEStrategy(_scaffoldIE) { }
+contract ProtocolGuild is BaseIEStrategy {
+    constructor(address _scaffoldIE) BaseIEStrategy(_scaffoldIE, "ProtocolGuildStrategy") { }
 
     enum RecipientType {
         FullTime,
@@ -31,19 +31,20 @@ contract ProtocolGuild is BaseIEStrategy, IStrategy {
     address public splitsContract;
     address public timeControlModule;
 
+    uint256 public topHatId;
+
     Recipient[] public members;
 
-    function createIE(bytes memory _data) external override(BaseIEStrategy, IStrategy) {
+    function createIE(bytes memory _data) external override returns (uint256) {
         _beforeCreateIE(_data);
-        _createIE(_data);
+        topHatId = _createIE(_data);
         _afterCreateIE(_data);
+
+        return topHatId;
     }
 
-    function evaluate(bytes memory _data) external override(BaseIEStrategy, IStrategy) returns (bytes memory) {
-        _beforeEvaluation(_data);
-        bytes memory result = _evaluate(_data);
-        _afterEvaluation(_data);
-        return result;
+    function evaluate(bytes memory _data) external override returns (bytes memory) {
+        return _evaluate(_data);
     }
 
     function _evaluate(bytes memory) internal override returns (bytes memory) {
@@ -55,22 +56,29 @@ contract ProtocolGuild is BaseIEStrategy, IStrategy {
         return abi.encode(memberAddresses, allocations);
     }
 
-    function _createIE(bytes memory _data) internal override {
+    function _createIE(bytes memory _data) internal override returns (uint256) {
         (
             address _timeControlModuleImpl,
             Recipient[] memory recipients,
+            string memory _topHatMetadata,
+            string memory _topHatImageURL,
             string memory _managerHatMetadata,
             string memory _managerHatImageURL,
             string memory _evaluatorMetadata,
             string memory _recipientHatMetadata,
             address[] memory _evaluators
-        ) = abi.decode(_data, (address, Recipient[], string, string, string, string, address[]));
+        ) = abi.decode(_data, (address, Recipient[], string, string, string, string, string, string, address[]));
         timeControlModuleImpl = IHatsTimeControlModule(_timeControlModuleImpl);
 
         IHats hats = IHats(scaffoldIE.getHats());
+
+        topHatId = hats.mintTopHat(address(this), _topHatMetadata, _topHatImageURL);
+        // mint tophat to this contract
+        // https://github.com/hats-protocol/hats-protocol/blob/b23340f825a2cdf9f5758462f8161d7076ad7f6f/src/Hats.sol#L168
+
         // create manager hats under the top hat
         uint256 managerHatId = hats.createHat(
-            scaffoldIE.getTopHatId(), // parent hatId
+            topHatId, // parent hatId
             _managerHatMetadata, // should be ipfs://cid for data (e.g.
                 // https://ipfs.io/ipfs/bafkreigbzej36xhwpu2qt7zzmdv3yei446e2mmgv7u7hl4dfrz3dswwd6y)
             2, // max supply is the number of modules (TODO: change to actual max supply) (evaluator + recipient hats)
@@ -127,8 +135,13 @@ contract ProtocolGuild is BaseIEStrategy, IStrategy {
             address(this)
         );
 
-        // Store members for evaluation
-        members = recipients;
+        // TODO : remove this. This is a temporary fix to avoid memory allocation issues
+        // This is not a gas efficient solution.
+        members = new Recipient[](recipients.length);
+        for (uint256 i = 0; i < recipients.length; i++) {
+            members[i] = recipients[i];
+        }
+        return topHatId;
     }
 
     function _calculateTimeWeightedAllocations(

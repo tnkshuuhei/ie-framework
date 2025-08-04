@@ -17,7 +17,6 @@ contract ScaffoldIE is IScaffoldIE {
     address public owner;
 
     uint256 public poolCount;
-    uint256 public topHatId;
 
     // poolId => strategy
     mapping(uint256 => address) public poolIdToStrategy;
@@ -26,37 +25,30 @@ contract ScaffoldIE is IScaffoldIE {
         address _owner,
         address _hats,
         address _splits,
-        string memory _topHatMetadata,
-        string memory _topHatImageURL,
         IHatsModuleFactory _hatsModuleFactory,
         address _hatCreatorModuleImpl
     ) {
         hats = IHats(_hats);
         splits = ISplitMain(_splits);
 
-        // mint tophat to this contract
-        // https://github.com/hats-protocol/hats-protocol/blob/b23340f825a2cdf9f5758462f8161d7076ad7f6f/src/Hats.sol#L168
-        topHatId = hats.mintTopHat(address(this), _topHatMetadata, _topHatImageURL);
-        // TODO: manage owner address on tophat and correcponding hat
         owner = _owner;
 
         hatsModuleFactory = _hatsModuleFactory;
         hatCreatorModuleImpl = IHatsHatCreatorModule(_hatCreatorModuleImpl);
     }
 
-    function createIE(bytes memory _data, address strategy) external returns (uint256) {
-        _createIE(_data, strategy);
+    function createIE(bytes memory _data, address strategy) external returns (uint256 topHatId, uint256 poolId) {
+        topHatId = _createIE(_data, strategy);
 
         poolCount++;
+        poolIdToStrategy[poolCount] = strategy;
 
         emit PoolCreated(poolCount, strategy);
-        return poolCount;
+        return (topHatId, poolCount);
     }
 
-    function _createIE(bytes memory _data, address strategy) internal {
-        IStrategy(strategy).createIE(_data);
-
-        poolIdToStrategy[poolCount] = strategy;
+    function _createIE(bytes memory _data, address strategy) internal returns (uint256 topHatId) {
+        topHatId = IStrategy(strategy).createIE(_data);
     }
 
     function getHats() external view returns (address) {
@@ -73,10 +65,6 @@ contract ScaffoldIE is IScaffoldIE {
 
     function getHatCreatorModuleImpl() external view returns (address) {
         return address(hatCreatorModuleImpl);
-    }
-
-    function getTopHatId() external view returns (uint256) {
-        return topHatId;
     }
 
     function getSplits() external view returns (address) {

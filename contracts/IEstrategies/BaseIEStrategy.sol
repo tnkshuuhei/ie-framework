@@ -6,10 +6,13 @@ import { IScaffoldIE } from "../interfaces/IScaffoldIE.sol";
 abstract contract BaseIEStrategy {
     IScaffoldIE public scaffoldIE;
 
+    string public name;
+
     error NotImplemented();
 
-    constructor(address _scaffoldIE) {
+    constructor(address _scaffoldIE, string memory _name) {
         scaffoldIE = IScaffoldIE(_scaffoldIE);
+        name = _name;
     }
 
     // inside scaffoldIE
@@ -17,9 +20,9 @@ abstract contract BaseIEStrategy {
     // poolId ++;
     // emit PoolCreated();
     // return poolId;
-    function createIE(bytes memory _data) external virtual {
+    function createIE(bytes memory _data) external virtual returns (uint256 id) {
         _beforeCreateIE(_data);
-        _createIE(_data);
+        id = _createIE(_data);
         _afterCreateIE(_data);
     }
 
@@ -27,7 +30,7 @@ abstract contract BaseIEStrategy {
 
     function _afterCreateIE(bytes memory _data) internal virtual { }
 
-    function _createIE(bytes memory _data) internal virtual { }
+    function _createIE(bytes memory _data) internal virtual returns (uint256 id) { }
 
     /// @param _data The data for the evaluation
     function evaluate(bytes memory _data) external virtual returns (bytes memory result) {
