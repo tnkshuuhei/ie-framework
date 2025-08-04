@@ -5,3 +5,4 @@ forge-std/=lib/forge-std/
 splits-contracts/=lib/splits-contracts/contracts/
 hats-protocol/=lib/hats-protocol/src/
 solady/=lib/hats-module/lib/solady/src/
+eas-contracts/=lib/eas-contracts/contracts/
