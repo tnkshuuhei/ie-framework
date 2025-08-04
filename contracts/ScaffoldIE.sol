@@ -4,9 +4,9 @@ pragma solidity >=0.8.29;
 import { IHats } from "hats-protocol/Interfaces/IHats.sol";
 import { ISplitMain } from "./interfaces/ISplitMain.sol";
 import { IHatsModuleFactory } from "./interfaces/IHatsModuleFactory.sol";
-import { IHatsHatCreatorModule } from "./Hats/IHatCreatorModule.sol";
+import { IHatsHatCreatorModule } from "./interfaces/IHatCreatorModule.sol";
 import { IScaffoldIE } from "./interfaces/IScaffoldIE.sol";
-import { IStrategy } from "./IEstrategies/IStrategy.sol";
+import { IStrategy } from "./interfaces/IStrategy.sol";
 
 contract ScaffoldIE is IScaffoldIE {
     IHats public hats;

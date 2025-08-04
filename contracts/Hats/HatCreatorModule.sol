@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.29;
 
-import { IHatsHatCreatorModule } from "./IHatCreatorModule.sol";
+import { IHatsHatCreatorModule } from "../interfaces/IHatCreatorModule.sol";
 import { HatsModule } from "hats-module/src/HatsModule.sol";
 
 contract HatsHatCreatorModule is HatsModule, IHatsHatCreatorModule {

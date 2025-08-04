@@ -1,14 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.29;
 
-import { BaseIEStrategy } from "./BaseIEStrategy.sol";
-import { IStrategy } from "./IStrategy.sol";
+import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 import { IHats } from "hats-protocol/Interfaces/IHats.sol";
+
+import { BaseIEStrategy } from "./BaseIEStrategy.sol";
+import { IStrategy } from "../interfaces/IStrategy.sol";
 import { ISplitMain } from "../interfaces/ISplitMain.sol";
 import { IHatsModuleFactory } from "../interfaces/IHatsModuleFactory.sol";
-import { IHatsHatCreatorModule } from "../Hats/IHatCreatorModule.sol";
-import { IHatsTimeControlModule } from "../Hats/ITimeControlModule.sol";
-import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
+import { IHatsHatCreatorModule } from "../interfaces/IHatCreatorModule.sol";
+import { IHatsTimeControlModule } from "../interfaces/ITimeControlModule.sol";
 import { IScaffoldIE } from "../interfaces/IScaffoldIE.sol";
 
 contract ProtocolGuild is BaseIEStrategy {
