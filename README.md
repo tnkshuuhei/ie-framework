@@ -74,6 +74,7 @@ $$s_i(t) = \frac{\sqrt{(d_i^{start} - d_i^{inactive}) \cdot f_i}}{\sum_{j=1}^{n}
 sequenceDiagram
     actor Admin
     participant IE as ScaffoldIE Contract
+    participant Strategy as ProtocolGuild Strategy
     participant Hats as HatsProtocol
     participant Splits as SplitsContract
     participant Factory as ModuleFactory
@@ -83,67 +84,60 @@ sequenceDiagram
     actor Recipients
 
     Note over Admin,Recipients: Contract Initialization
-    Admin->>IE: constructor(owner, hats, splits, metadata, imageURL, factory, creatorImpl, timeControlImpl)
-    IE->>Hats: mintTopHat(owner, metadata, imageURL)
-    Hats-->>IE: topHatId
-    IE->>IE: Store contract addresses and topHatId
+    Admin->>IE: constructor(owner, hats, splits, factory, creatorImpl)
+    IE->>IE: Store contract addresses and owner
 
     Note over Admin,Recipients: Pool Creation Process
-    Admin->>IE: createPool(encodedData)
-    IE->>IE: Validate pool configuration data
+    Admin->>IE: createIE(encodedData, strategy)
+    IE->>Strategy: createIE(encodedData)
+    Strategy->>Strategy: Decode recipient data and evaluators
 
-    IE->>Hats: Create manager hat
-    Hats-->>IE: managerHatId
+    Strategy->>Hats: mintTopHat(strategy, metadata, imageURL)
+    Hats-->>Strategy: topHatId
 
-    IE->>Factory: Deploy HatCreator & TimeControl modules
-    Factory-->>IE: hatCreatorModule, timeControlModule
+    Strategy->>Hats: createHat(parent: topHatId, manager metadata)
+    Hats-->>Strategy: managerHatId
 
-    IE->>Splits: Create splits contract
-    Splits-->>IE: splitsContract
+    Strategy->>Factory: createHatsModule(creatorImpl, managerHatId)
+    Factory-->>Strategy: hatCreatorModule
+    Strategy->>Hats: mintHat(managerHatId, hatCreatorModule)
 
-    IE->>Creator: Create evaluator & recipient hats
-    Creator-->>IE: evaluatorHatId, recipientHatId
+    Strategy->>Factory: createHatsModule(timeControlImpl, managerHatId)
+    Factory-->>Strategy: timeControlModule
+    Strategy->>Hats: mintHat(managerHatId, timeControlModule)
 
-    IE->>TimeControl: Mint hats to evaluators & recipients
-		TimeControl ->> Evaluators: mintHat()
-		TimeControl ->> Recipients: mintHat()
+    Strategy->>Creator: createHat(evaluator metadata, evaluators.length)
+    Creator-->>Strategy: evaluatorHatId
 
-    IE->>IE: emit PoolCreated event
+    Strategy->>Creator: createHat(recipient metadata, recipients.length)
+    Creator-->>Strategy: recipientHatId
+
+    Strategy->>TimeControl: mintHat(evaluatorHatId, evaluator, timestamp)
+    TimeControl->>Evaluators: mintHat()
+    Strategy->>TimeControl: mintHat(recipientHatId, recipient, timestamp)
+    TimeControl->>Recipients: mintHat()
+
+    Strategy->>Splits: createSplit(recipients, allocations, 0, strategy)
+    Splits-->>Strategy: splitsContract
+
+    Strategy-->>IE: topHatId
+    IE->>IE: poolCount++, store strategy
+    IE->>IE: emit PoolCreated(poolId, strategy)
 
     Note over Admin,Recipients: Evaluation Process
-    Evaluators->>IE: evaluate(poolId)
-    IE ->> TimeControl: get times
+    Evaluators->>IE: evaluate(poolId, data)
+    IE->>Strategy: evaluate(data)
+    Strategy->>TimeControl: getWearingElapsedTime(recipient, recipientHatId)
+    TimeControl-->>Strategy: elapsedTime
 
-    TimeControl->>TimeControl: Calculate time-weighted allocations
-    TimeControl->>Splits: updateSplit(splitsContract, accounts, percentAllocations, 0)
+    Strategy->>Strategy: Calculate time-weighted allocations
+    Note over Strategy: For each recipient i:
+    Note over Strategy: time_weight_i = √(elapsed_time_i × (full_time ? 100 : 50))
+    Note over Strategy: normalized_share_i = (time_weight_i / Σtime_weights) × 1_000_000
 
-    Note over Admin,Recipients: Time Weight Calculation
-    Note over IE: For each contributor i:
-    Note over IE: time_weight_i = √((start_date_i - months_inactive_i) × full_or_part_time_i)
-    Note over IE: normalized_share_i = (time_weight_i / Σtime_weights) × 100
-```
-
-## Hypercerts Usecase
-
-```solidity
-    function getWearerStatus(
-        address _wearer,
-        uint256 /*_hatId */
-    ) public view override returns (bool eligible, bool standing) {
-        uint256 len = ARRAY_LENGTH();
-        IHypercertToken token = IHypercertToken(TOKEN_ADDRESS());
-        uint256[] memory tokenIds = TOKEN_IDS();
-        uint256[] memory minBalances = MIN_BALANCES_OF_UNITS();
-
-        for (uint256 i = 0; i < len; ) {
-            eligible = token.unitsOf(_wearer, tokenIds[i]) >= minBalances[i];
-            if (eligible) break;
-            unchecked {
-                ++i;
-            }
-        }
-        standing = true;
-    }
+    Strategy->>Splits: updateSplit(splitsContract, recipients, allocations, 0)
+    Strategy-->>IE: encoded result
+    IE-->>Evaluators: evaluation result
 ```
 
 {%preview https://github.com/tnkshuuhei/HatsEligibilityModules %}
