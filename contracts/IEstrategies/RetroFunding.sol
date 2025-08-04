@@ -56,6 +56,7 @@ contract RetroFunding is BaseIEStrategy {
     ISchemaResolver public resolver;
 
     event AttestationCreated(bytes32 attestationUID);
+    event Evaluated(address[] recipients, uint32[] allocations);
 
     function _beforeCreateIE(bytes memory _data) internal override {
         (string memory _schema,,,,,,,,,) =
@@ -145,11 +146,23 @@ contract RetroFunding is BaseIEStrategy {
     // 2. update splits
     function evaluate(bytes memory _data) external override returns (bytes memory) {
         _beforeEvaluation(_data);
-        _evaluate(_data);
-        _afterEvaluation(_data);
+        bytes memory result = _evaluate(_data);
+
+        return result;
     }
 
-    function _evaluate(bytes memory _data) internal override returns (bytes memory) { }
+    function _evaluate(bytes memory _data) internal override returns (bytes memory) {
+        (bytes memory attestationData) = abi.decode(_data, (bytes));
+
+        // This should follow the schema
+        (, address[] memory _recipients, uint32[] memory _allocations,,,) =
+            abi.decode(attestationData, (string, address[], uint32[], address, uint256, address));
+
+        ISplitMain(scaffoldIE.getSplits()).updateSplit(splitsContract, _recipients, _allocations, 0);
+        emit Evaluated(_recipients, _allocations);
+
+        return abi.encode(_recipients, _allocations);
+    }
 
     function _beforeEvaluation(bytes memory _data) internal override {
         (bytes memory attestationData) = abi.decode(_data, (bytes));
