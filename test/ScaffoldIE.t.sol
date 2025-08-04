@@ -3,19 +3,18 @@ pragma solidity >=0.8.29 <0.9.0;
 
 import { Test } from "forge-std/src/Test.sol";
 import { console2 } from "forge-std/src/console2.sol";
+import { IHats } from "hats-protocol/Interfaces/IHats.sol";
+import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 import { ScaffoldIE } from "../contracts/ScaffoldIE.sol";
 import { IScaffoldIE } from "../contracts/interfaces/IScaffoldIE.sol";
 import { ProtocolGuild } from "../contracts/IEstrategies/ProtocolGuild.sol";
-import { IHats } from "hats-protocol/Interfaces/IHats.sol";
 import { ISplitMain } from "../contracts/interfaces/ISplitMain.sol";
 import { IHatsModuleFactory } from "../contracts/interfaces/IHatsModuleFactory.sol";
 import { IHatsHatCreatorModule } from "../contracts/interfaces/IHatCreatorModule.sol";
 import { IHatsTimeControlModule } from "../contracts/interfaces/ITimeControlModule.sol";
 import { HatsHatCreatorModule } from "../contracts/Hats/HatCreatorModule.sol";
 import { HatsTimeControlModule } from "../contracts/Hats/TimeControlModule.sol";
-import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
 
-// TODO: fix test
 contract ScaffoldIETest is Test {
     IScaffoldIE public scaffoldIE;
     ProtocolGuild public protocolGuild;
