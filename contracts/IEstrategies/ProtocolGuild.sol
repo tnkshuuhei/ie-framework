@@ -26,15 +26,15 @@ contract ProtocolGuild is BaseIEStrategy {
     }
 
     IHatsTimeControlModule public timeControlModuleImpl;
+    Recipient[] public members;
 
+    uint256 public topHatId;
     uint256 public recipientHatId;
     uint256 public evaluatorHatId;
     address public splitsContract;
     address public timeControlModule;
 
-    uint256 public topHatId;
-
-    Recipient[] public members;
+    event Evaluated(address[] memberAddresses, uint32[] allocations);
 
     function createIE(bytes memory _data) external override returns (uint256) {
         _beforeCreateIE(_data);
@@ -53,6 +53,8 @@ contract ProtocolGuild is BaseIEStrategy {
         uint32[] memory allocations = _calculateTimeWeightedAllocations(members, timeControlModule);
 
         ISplitMain(scaffoldIE.getSplits()).updateSplit(splitsContract, memberAddresses, allocations, 0);
+
+        emit Evaluated(memberAddresses, allocations);
 
         return abi.encode(memberAddresses, allocations);
     }
