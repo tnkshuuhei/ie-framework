@@ -1,25 +1,57 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.29;
 
-import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import { AccessControl } from "@openzeppelin/contracts/access/AccessControl.sol";
 import { Pausable } from "@openzeppelin/contracts/utils/Pausable.sol";
 
 import { ISplitMain } from "./interfaces/ISplitMain.sol";
 import { IScaffoldIE } from "./interfaces/IScaffoldIE.sol";
 import { IStrategy } from "./interfaces/IStrategy.sol";
 
-contract ScaffoldIE is IScaffoldIE, Ownable, Pausable {
+contract ScaffoldIE is IScaffoldIE, AccessControl, Pausable {
     ISplitMain public splits;
 
+    bytes32 public constant SPLITTER_ROLE = keccak256("SPLITTER_ROLE");
+    bytes32 public constant EVALUATOR_ROLE = keccak256("EVALUATOR_ROLE");
     uint256 public poolCount;
+    address public rootSplit;
 
     error InvalidCaller(address _caller);
 
     // poolId => strategy
     mapping(uint256 => address) public poolIdToStrategy;
 
-    constructor(address _owner, address _splits) Ownable(_owner) {
+    constructor(address _admin, address _splits) {
+        _grantRole(DEFAULT_ADMIN_ROLE, _admin);
         splits = ISplitMain(_splits);
+    }
+
+    function createIERoute(uint32[] memory _initialAllocations, address _caller) external onlyRole(SPLITTER_ROLE) {
+        require(msg.sender == _caller, InvalidCaller(_caller));
+
+        address[] memory IEs = new address[](poolCount);
+
+        for (uint256 i = 0; i < poolCount; i++) {
+            IEs[i] = IStrategy(poolIdToStrategy[i]).getAddress();
+        }
+
+        rootSplit = splits.createSplit(IEs, _initialAllocations, 0, address(this));
+
+        emit RouteCreated(rootSplit, _initialAllocations, _caller);
+    }
+
+    function updateRoute(uint32[] memory _allocations, address _caller) external onlyRole(SPLITTER_ROLE) {
+        require(msg.sender == _caller, InvalidCaller(_caller));
+
+        address[] memory IEs = new address[](poolCount);
+
+        for (uint256 i = 0; i < poolCount; i++) {
+            IEs[i] = IStrategy(poolIdToStrategy[i]).getAddress();
+        }
+
+        splits.updateSplit(rootSplit, IEs, _allocations, 0);
+
+        emit RouteUpdated(rootSplit, _allocations, _caller);
     }
 
     function createIE(bytes memory _data, address strategy) external {
@@ -59,11 +91,11 @@ contract ScaffoldIE is IScaffoldIE, Ownable, Pausable {
         return poolIdToStrategy[_poolId];
     }
 
-    function pause() public onlyOwner {
+    function pause() public onlyRole(DEFAULT_ADMIN_ROLE) {
         _pause();
     }
 
-    function unpause() public onlyOwner {
+    function unpause() public onlyRole(DEFAULT_ADMIN_ROLE) {
         _unpause();
     }
 }

@@ -11,4 +11,6 @@ interface IStrategy {
     function updateRecipients(address[] memory _recipients, address _caller) external;
 
     function getRecipients() external view returns (address[] memory);
+
+    function getAddress() external view returns (address);
 }

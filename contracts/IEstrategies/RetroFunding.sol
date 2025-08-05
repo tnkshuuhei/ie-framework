@@ -48,6 +48,10 @@ contract RetroFunding is BaseIEStrategy, AccessControl, Pausable {
         _grantRole(PAUSER_ROLE, _admin);
     }
 
+    function getAddress() external view returns (address) {
+        return splitsContract;
+    }
+
     // "string datasets, address[] recipients, uint32[] allocations , address contract, uint256 chainId, address
     // attester"
     string public schema;
