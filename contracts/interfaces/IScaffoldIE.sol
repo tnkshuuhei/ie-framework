@@ -10,5 +10,5 @@ interface IScaffoldIE {
 
     function getStrategy(uint256 _poolId) external view returns (address);
 
-    function evaluate(uint256 _poolId, bytes memory _data) external;
+    function evaluate(uint256 _poolId, bytes memory _data, address _caller) external;
 }
