@@ -45,7 +45,7 @@ abstract contract BaseIEStrategy is IStrategy {
 
     function _registerRecipients(address[] memory _recipients) internal virtual { }
 
-    function getRecipients() external view returns (address[] memory) { }
+    function getRecipients() external view virtual returns (address[] memory) { }
 
     function _evaluate(bytes memory _data) internal virtual { }
 
@@ -53,11 +53,11 @@ abstract contract BaseIEStrategy is IStrategy {
 
     function _afterEvaluation(bytes memory _data) internal virtual { }
 
-    function initialize(uint256 _poolId, bytes memory _data) external virtual onlyScaffoldIE {
+    function initialize(uint256 _poolId, bytes memory _data) external virtual {
         __BaseStrategyInit(_poolId, _data);
     }
 
-    function __BaseStrategyInit(uint256 _poolId, bytes memory _data) internal virtual {
+    function __BaseStrategyInit(uint256 _poolId, bytes memory _data) internal {
         if (initialized[_poolId]) {
             revert AlreadyInitialized();
         }

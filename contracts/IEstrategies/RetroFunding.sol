@@ -14,7 +14,7 @@ contract RetroFunding is BaseIEStrategy, AccessControl, Pausable {
     // State variables
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
     bytes32 public constant EVALUATOR_ROLE = keccak256("EVALUATOR_ROLE");
-    bytes32 public constant MEASURER_ROLE = keccak256("MEASURER_ROLE");
+    bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
 
     // "string datasets, address[] recipients, uint32[] allocations , address contract, uint256 chainId, address
     // attester"
@@ -32,7 +32,7 @@ contract RetroFunding is BaseIEStrategy, AccessControl, Pausable {
 
     // Errors
     error InvalidEvaluator(address _caller);
-    error InvalidMeasurer(address _caller);
+    error InvalidManager(address _caller);
 
     // Constructor
     constructor(
@@ -43,6 +43,7 @@ contract RetroFunding is BaseIEStrategy, AccessControl, Pausable {
     )
         BaseIEStrategy(_scaffoldIE, "RetroFundingStrategy")
     {
+        // TODO: consider using hypercerts v2 attestations for eval, measurement
         eas = IEAS(_eas);
         schemaRegistry = ISchemaRegistry(_schemaRegistry);
 
@@ -58,14 +59,46 @@ contract RetroFunding is BaseIEStrategy, AccessControl, Pausable {
         return splitsContract;
     }
 
-    function createIE(bytes memory _data) external override {
+    function createIE(bytes memory _data) external override onlyScaffoldIE {
         _beforeCreateIE(_data);
         _createIE(_data);
     }
 
-    function evaluate(bytes memory _data, address _caller) external override onlyEvaluator(_caller) {
+    function evaluate(bytes memory _data, address _caller) external override onlyEvaluator(_caller) onlyScaffoldIE {
         _beforeEvaluation(_data);
         _evaluate(_data);
+    }
+
+    function registerRecipients(
+        address[] memory _recipients,
+        address _caller
+    )
+        external
+        override
+        onlyManager(_caller)
+        onlyScaffoldIE
+    {
+        _registerRecipients(_recipients);
+    }
+
+    function _registerRecipients(address[] memory _recipients) internal override {
+        recipients = _recipients;
+    }
+
+    function updateRecipients(
+        address[] memory _recipients,
+        address _caller
+    )
+        external
+        override
+        onlyManager(_caller)
+        onlyScaffoldIE
+    {
+        _updateRecipients(_recipients);
+    }
+
+    function _updateRecipients(address[] memory _recipients) internal {
+        recipients = _recipients;
     }
 
     // Internal functions
@@ -114,14 +147,22 @@ contract RetroFunding is BaseIEStrategy, AccessControl, Pausable {
         // TODO: return attestation data
     }
 
+    function _afterEvaluation(bytes memory _data) internal override {
+        revert NotImplemented();
+    }
+
+    function getRecipients() external view override returns (address[] memory) {
+        return recipients;
+    }
+
     // Modifiers
     modifier onlyEvaluator(address _caller) {
         require(hasRole(EVALUATOR_ROLE, _caller), InvalidEvaluator(_caller));
         _;
     }
 
-    modifier onlyMeasurer(address _caller) {
-        require(hasRole(MEASURER_ROLE, _caller), InvalidMeasurer(_caller));
+    modifier onlyManager(address _caller) {
+        require(hasRole(MANAGER_ROLE, _caller), InvalidManager(_caller));
         _;
     }
 }
