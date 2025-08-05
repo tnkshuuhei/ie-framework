@@ -11,25 +11,30 @@ import { Pausable } from "@openzeppelin/contracts/utils/Pausable.sol";
 import { AttesterResolver } from "../AttesterResolver.sol";
 
 contract RetroFunding is BaseIEStrategy, AccessControl, Pausable {
+    // State variables
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
-
     bytes32 public constant EVALUATOR_ROLE = keccak256("EVALUATOR_ROLE");
-
     bytes32 public constant MEASURER_ROLE = keccak256("MEASURER_ROLE");
 
+    // "string datasets, address[] recipients, uint32[] allocations , address contract, uint256 chainId, address
+    // attester"
+    string public schema;
+    bytes32 public schemaUID;
+    address public splitsContract;
+
+    IEAS public eas;
+    ISchemaRegistry public schemaRegistry;
+    ISchemaResolver public schemaResolver;
+
+    // Events
+    event AttestationCreated(bytes32 attestationUID);
+    event Evaluated(address[] recipients, uint32[] allocations);
+
+    // Errors
     error InvalidEvaluator(address _caller);
     error InvalidMeasurer(address _caller);
 
-    modifier onlyEvaluator(address _caller) {
-        require(hasRole(EVALUATOR_ROLE, _caller), InvalidEvaluator(_caller));
-        _;
-    }
-
-    modifier onlyMeasurer(address _caller) {
-        require(hasRole(MEASURER_ROLE, _caller), InvalidMeasurer(_caller));
-        _;
-    }
-
+    // Constructor
     constructor(
         address _admin,
         address _scaffoldIE,
@@ -48,33 +53,27 @@ contract RetroFunding is BaseIEStrategy, AccessControl, Pausable {
         _grantRole(PAUSER_ROLE, _admin);
     }
 
+    // Public/External functions
     function getAddress() external view returns (address) {
         return splitsContract;
-    }
-
-    // "string datasets, address[] recipients, uint32[] allocations , address contract, uint256 chainId, address
-    // attester"
-    string public schema;
-    bytes32 public schemaUID;
-    address public splitsContract;
-
-    IEAS public eas;
-    ISchemaRegistry public schemaRegistry;
-    ISchemaResolver public schemaResolver;
-
-    event AttestationCreated(bytes32 attestationUID);
-    event Evaluated(address[] recipients, uint32[] allocations);
-
-    function _beforeCreateIE(bytes memory _data) internal override {
-        (string memory _schema) = abi.decode(_data, (string));
-
-        schemaUID = schemaRegistry.register(_schema, schemaResolver, true);
-        schema = _schema;
     }
 
     function createIE(bytes memory _data) external override {
         _beforeCreateIE(_data);
         _createIE(_data);
+    }
+
+    function evaluate(bytes memory _data, address _caller) external override onlyEvaluator(_caller) {
+        _beforeEvaluation(_data);
+        _evaluate(_data);
+    }
+
+    // Internal functions
+    function _beforeCreateIE(bytes memory _data) internal override {
+        (string memory _schema) = abi.decode(_data, (string));
+
+        schemaUID = schemaRegistry.register(_schema, schemaResolver, true);
+        schema = _schema;
     }
 
     function _createIE(bytes memory _data) internal override {
@@ -84,27 +83,6 @@ contract RetroFunding is BaseIEStrategy, AccessControl, Pausable {
 
         splitsContract =
             ISplitMain(scaffoldIE.getSplits()).createSplit(_recipients, _initialAllocations, 0, address(this));
-    }
-
-    // this evaluate function behaves:
-    // 1. create attestation
-    // 2. update splits
-    function evaluate(bytes memory _data, address _caller) external override onlyEvaluator(_caller) {
-        _beforeEvaluation(_data);
-        _evaluate(_data);
-    }
-
-    function _evaluate(bytes memory _data) internal override {
-        (bytes memory attestationData) = abi.decode(_data, (bytes));
-
-        // This should follow the schema
-        (, address[] memory _recipients, uint32[] memory _allocations,,,) =
-            abi.decode(attestationData, (string, address[], uint32[], address, uint256, address));
-
-        ISplitMain(scaffoldIE.getSplits()).updateSplit(splitsContract, _recipients, _allocations, 0);
-        emit Evaluated(_recipients, _allocations);
-
-        // TODO: return attestation data
     }
 
     function _beforeEvaluation(bytes memory _data) internal override {
@@ -121,5 +99,29 @@ contract RetroFunding is BaseIEStrategy, AccessControl, Pausable {
 
         bytes32 attestationUID = eas.attest(request);
         emit AttestationCreated(attestationUID);
+    }
+
+    function _evaluate(bytes memory _data) internal override {
+        (bytes memory attestationData) = abi.decode(_data, (bytes));
+
+        // This should follow the schema
+        (, address[] memory _recipients, uint32[] memory _allocations,,,) =
+            abi.decode(attestationData, (string, address[], uint32[], address, uint256, address));
+
+        ISplitMain(scaffoldIE.getSplits()).updateSplit(splitsContract, _recipients, _allocations, 0);
+        emit Evaluated(_recipients, _allocations);
+
+        // TODO: return attestation data
+    }
+
+    // Modifiers
+    modifier onlyEvaluator(address _caller) {
+        require(hasRole(EVALUATOR_ROLE, _caller), InvalidEvaluator(_caller));
+        _;
+    }
+
+    modifier onlyMeasurer(address _caller) {
+        require(hasRole(MEASURER_ROLE, _caller), InvalidMeasurer(_caller));
+        _;
     }
 }
