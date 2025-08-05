@@ -11,6 +11,8 @@ abstract contract BaseIEStrategy is IStrategy {
 
     address[] public recipients;
 
+    mapping(uint256 => bool) private initialized;
+
     error NotImplemented();
 
     error AlreadyInitialized();
@@ -26,11 +28,6 @@ abstract contract BaseIEStrategy is IStrategy {
         name = _name;
     }
 
-    // inside scaffoldIE
-    // strategy.createIE(data)
-    // poolId ++;
-    // emit PoolCreated();
-    // return poolId;
     function createIE(bytes memory _data) external virtual { }
 
     function _beforeCreateIE(bytes memory _data) internal virtual { }
@@ -61,9 +58,9 @@ abstract contract BaseIEStrategy is IStrategy {
     }
 
     function __BaseStrategyInit(uint256 _poolId, bytes memory _data) internal virtual {
-        address strategy = scaffoldIE.getStrategy(_poolId);
-        if (strategy != address(0)) {
+        if (initialized[_poolId]) {
             revert AlreadyInitialized();
         }
+        initialized[_poolId] = true;
     }
 }
