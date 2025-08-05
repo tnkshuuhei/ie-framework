@@ -18,15 +18,15 @@ contract RetroFunding is BaseIEStrategy, AccessControl, Pausable {
     bytes32 public constant MEASURER_ROLE = keccak256("MEASURER_ROLE");
 
     error InvalidEvaluator(address _caller);
-    error InvalidMeasuer(address _caller);
+    error InvalidMeasurer(address _caller);
 
     modifier onlyEvaluator(address _caller) {
         require(hasRole(EVALUATOR_ROLE, _caller), InvalidEvaluator(_caller));
         _;
     }
 
-    modifier onlyMeasuer(address _caller) {
-        require(hasRole(MEASURER_ROLE, _caller), InvalidMeasuer(_caller));
+    modifier onlyMeasurer(address _caller) {
+        require(hasRole(MEASURER_ROLE, _caller), InvalidMeasurer(_caller));
         _;
     }
 
