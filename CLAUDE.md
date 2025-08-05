@@ -18,8 +18,9 @@ Scaffold-IE is a smart contract system implementing Impact Evaluation (IE) mecha
 ## Essential Commands
 
 ### Development Workflow
+
 ```bash
-pnpm setup              # Install dependencies and setup environment  
+pnpm setup              # Install dependencies and setup environment
 pnpm clean              # Clean build artifacts
 pnpm build              # Clean and compile contracts
 pnpm test               # Clean and run all tests
@@ -27,6 +28,7 @@ pnpm coverage           # Generate test coverage reports
 ```
 
 ### Testing Commands
+
 ```bash
 forge test                        # Run all tests
 forge test -vvv                   # Run with detailed output for debugging
@@ -36,6 +38,7 @@ forge test --rpc-url https://sepolia.drpc.org  # Test against Sepolia
 ```
 
 ### Code Formatting
+
 ```bash
 forge fmt               # Format Solidity code (always run before committing)
 ```
@@ -47,6 +50,7 @@ forge fmt               # Format Solidity code (always run before committing)
 The system uses a pluggable strategy pattern where different evaluation mechanisms can be implemented:
 
 1. **ScaffoldIE.sol** - Main orchestrator contract
+
    - Manages pool creation and evaluation routing
    - Delegates to strategy contracts for specific IE logic
    - Maps poolId to strategy addresses
@@ -54,33 +58,33 @@ The system uses a pluggable strategy pattern where different evaluation mechanis
 2. **Strategy System**:
    - `IStrategy.sol` - Interface defining `createIE()` and `evaluate()` functions
    - `BaseIEStrategy.sol` - Abstract base with hook methods for common functionality
-   - `ProtocolGuild.sol` - Concrete implementation of Protocol Guild time-weighting
+   - `RetroFunding.sol` - Concrete implementation using EAS attestations for retroactive funding evaluation
 
 ### Protocol Integrations
 
-The system integrates with three key protocols:
+The system integrates with key protocols:
 
-- **Hats Protocol** - Role-based access control and hierarchical permissions
-- **Splits Protocol** - Automated fund distribution based on calculated allocations  
-- **Hypercerts** - Impact certification (via eligibility modules)
+- **EAS (Ethereum Attestation Service)** - For attestation-based evaluation and impact measurement
+- **Splits Protocol** - Automated fund distribution based on calculated allocations
+- **OpenZeppelin AccessControl** - Role-based permissions (EVALUATOR_ROLE, MEASURER_ROLE, PAUSER_ROLE)
 
-### Time-Weighted Allocation Formula
+### Evaluation Mechanisms
 
-Protocol Guild strategy implements:
-```solidity
-// Individual time weight calculation
-time_weight_i = sqrt(wearing_time_i * multiplier_i)
+Current strategies support different evaluation approaches:
 
-// Where multiplier_i = 1.0 (full-time) or 0.5 (part-time)
-// Final allocation = (time_weight_i / sum_all_weights) * 100%
-```
+**RetroFunding Strategy**:
+
+- Uses EAS attestations for impact measurement
+- Implements role-based evaluation with EVALUATOR_ROLE and MEASURER_ROLE
+- Supports pausable operations for emergency controls
+- Custom AttesterResolver ensures only authorized attestations
 
 ### Core Data Flow
 
-1. **Pool Creation**: `createIE()` → Strategy deploys hats, modules, splits contract
-2. **Time Tracking**: TimeControlModule tracks contributor activity periods
-3. **Evaluation**: `evaluate()` → Recalculates allocations and updates splits
-4. **Distribution**: Funds sent to splits contract automatically distribute to recipients
+1. **Pool Creation**: `createIE()` → Strategy sets up evaluation framework and splits contract
+2. **Registration**: Recipients are registered and configured within the strategy
+3. **Evaluation**: `evaluate()` → Recalculates allocations based on strategy-specific logic and updates splits
+4. **Distribution**: Funds sent to splits contract automatically distribute to recipients based on updated allocations
 
 ## File Structure
 
@@ -93,11 +97,8 @@ contracts/
 │   └── ...                    # External protocol interfaces
 ├── IEstrategies/              # Strategy implementations
 │   ├── BaseIEStrategy.sol     # Abstract base strategy
-│   └── ProtocolGuild.sol      # Protocol Guild implementation
-└── Hats/                      # Hats protocol modules
-    ├── HatCreatorModule.sol   # Creates hats for roles
-    ├── TimeControlModule.sol  # Tracks time periods
-    └── HypercertsEligibilityModule.sol
+│   └── RetroFunding.sol       # EAS-based retroactive funding strategy
+└── AttesterResolver.sol       # Custom EAS resolver for controlled attestations
 
 test/
 ├── ScaffoldIE.t.sol           # Main contract tests
@@ -112,37 +113,43 @@ script/
 - **Solidity Version**: 0.8.29 (in foundry.toml)
 - **Source Directory**: `contracts/` (not the typical `src/`)
 - **Optimizer**: Enabled with 200 runs and viaIR
-- **Dependencies**: OpenZeppelin, Hats Protocol, Splits contracts via git submodules
+- **Dependencies**: OpenZeppelin, EAS contracts, Splits contracts via git submodules
 
 ## Development Patterns
 
 ### Adding New Strategy
+
 1. Inherit from `BaseIEStrategy` in `contracts/IEstrategies/`
 2. Implement virtual `_createIE()` and `_evaluate()` methods
 3. Use hook methods (`_beforeCreateIE`, `_afterCreateIE`, etc.) for setup/cleanup
 4. Add comprehensive tests
 
-### Hat Module Development
-1. Create in `contracts/Hats/` following HatsModule patterns
-2. Implement eligibility or toggle interfaces as needed
-3. Integration test with TimeControlModule for time tracking
+### EAS Integration Development
 
-### Working with Time Weights
-- Time calculations use `block.timestamp` for current time
-- `getWearingElapsedTime()` returns seconds since hat was minted
-- Formula uses basis points (1_000_000 = 100%) for precision
-- Always ensure allocations sum to exactly 1_000_000
+1. Use `AttesterResolver` for controlled attestation validation
+2. Implement proper role-based access controls (EVALUATOR_ROLE, MEASURER_ROLE)
+3. Consider pausable patterns for emergency controls
+4. Test attestation flows and resolver logic
+
+### Working with Allocations
+
+- Allocation calculations should be precise and deterministic
+- Use basis points (1_000_000 = 100%) for precision in financial calculations
+- Always ensure allocations sum to exactly 1_000_000 when updating splits
+- Validate recipient addresses and allocations before updating splits
 
 ## Testing Strategy
 
 - Unit tests for individual contracts and functions
-- Integration tests for multi-contract workflows (hats + splits + modules)
-- Test both happy path and edge cases (zero time, equal distributions)
-- Mock external dependencies when testing in isolation
+- Integration tests for multi-contract workflows (EAS + splits + strategies)
+- Test both happy path and edge cases (zero allocations, equal distributions, role permissions)
+- Mock external dependencies (EAS, splits) when testing in isolation
+- Test pausable functionality and access control restrictions
 
 ## Common Debugging
 
 - Use `forge test -vvv` for detailed transaction traces
 - Check event emissions for state changes
-- Verify external protocol interactions (Hats.mintHat, Splits.updateSplit)
-- Time-based calculations sensitive to block.timestamp in tests
+- Verify external protocol interactions (EAS attestations, Splits.updateSplit)
+- Role-based access control testing requires proper account setup and role assignments
+- EAS attestation validation and resolver logic debugging
