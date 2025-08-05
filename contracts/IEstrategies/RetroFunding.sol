@@ -5,11 +5,9 @@ import { IEAS, Attestation, AttestationRequest, AttestationRequestData } from "e
 import { ISchemaRegistry } from "eas-contracts/ISchemaRegistry.sol";
 import { SchemaResolver } from "eas-contracts/resolver/SchemaResolver.sol";
 import { ISchemaResolver } from "eas-contracts/resolver/ISchemaResolver.sol";
-import { IHats } from "hats-protocol/Interfaces/IHats.sol";
+
 import { BaseIEStrategy } from "./BaseIEStrategy.sol";
 import { ISplitMain } from "../interfaces/ISplitMain.sol";
-import { IHatsModuleFactory } from "../interfaces/IHatsModuleFactory.sol";
-import { IHatsHatCreatorModule } from "../interfaces/IHatCreatorModule.sol";
 
 contract AttesterResolver is SchemaResolver {
     address private immutable _targetAttester;
