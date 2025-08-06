@@ -13,16 +13,10 @@ import { BaseIEStrategy } from "../contracts/IEstrategies/BaseIEStrategy.sol";
 import { IAccessControl } from "@openzeppelin/contracts/access/IAccessControl.sol";
 
 contract MockStrategy is BaseIEStrategy {
-    address public strategyAddress;
-
     event MockCreateIECalled(bytes data);
     event MockEvaluateCalled(bytes data, address caller);
     event MockRegisterRecipientsCalled(address[] recipients, address caller);
     event MockUpdateRecipientsCalled(address[] recipients, address caller);
-
-    constructor() BaseIEStrategy(address(0), "MockStrategy") {
-        strategyAddress = address(this);
-    }
 
     function createIE(bytes memory _data) external override {
         emit MockCreateIECalled(_data);
@@ -52,11 +46,6 @@ contract MockStrategy is BaseIEStrategy {
 
     function _registerRecipients(address[] memory _recipients) internal override {
         recipients = _recipients;
-    }
-
-    // Helper function for testing
-    function setStrategyAddress(address _address) external {
-        strategyAddress = _address;
     }
 
     function setRecipients(address[] memory _recipients) external {
@@ -105,16 +94,20 @@ contract ScaffoldIETest is Test {
 
     function testCreateIE() public {
         bytes memory data = abi.encode("test data");
-
+        bytes memory initializeData = abi.encode(address(0), address(0), bytes32(0), address(0));
         // Mock IStrategy.initialize call
-        vm.mockCall(address(mockStrategy), abi.encodeWithSelector(IStrategy.initialize.selector, 0, data), abi.encode());
+        vm.mockCall(
+            address(mockStrategy),
+            abi.encodeWithSelector(IStrategy.initialize.selector, 0, initializeData),
+            abi.encode()
+        );
 
         // Mock IStrategy.createIE call
         vm.mockCall(address(mockStrategy), abi.encodeWithSelector(IStrategy.createIE.selector, data), abi.encode());
 
         // Execute test
         vm.prank(owner);
-        scaffoldIE.createIE(data, address(mockStrategy));
+        scaffoldIE.createIE(data, initializeData, address(mockStrategy));
 
         // Verify results
         assertEq(scaffoldIE.getPoolCount(), 1);
@@ -124,13 +117,14 @@ contract ScaffoldIETest is Test {
     function testCreateIERoute() public {
         // Create IE beforehand
         bytes memory data = abi.encode("test data");
+        bytes memory initializeData = abi.encode(address(0), address(0), bytes32(0), address(0));
         vm.prank(owner);
-        scaffoldIE.createIE(data, address(mockStrategy));
+        scaffoldIE.createIE(data, initializeData, address(mockStrategy));
 
         // Create second IE
         MockStrategy mockStrategy2 = new MockStrategy();
         vm.prank(owner);
-        scaffoldIE.createIE(data, address(mockStrategy2));
+        scaffoldIE.createIE(data, initializeData, address(mockStrategy2));
 
         // Mock ISplitMain.createSplit call
         address[] memory IEs = new address[](2);
@@ -248,24 +242,29 @@ contract ScaffoldIETest is Test {
         // Create multiple IEs
         bytes memory data1 = abi.encode("data1");
         bytes memory data2 = abi.encode("data2");
+        bytes memory initializeData = abi.encode(address(0), address(0), bytes32(0), address(0));
 
         // First IE
         vm.mockCall(
-            address(mockStrategy), abi.encodeWithSelector(IStrategy.initialize.selector, 0, data1), abi.encode()
+            address(mockStrategy),
+            abi.encodeWithSelector(IStrategy.initialize.selector, 0, initializeData, address(scaffoldIE)),
+            abi.encode()
         );
         vm.mockCall(address(mockStrategy), abi.encodeWithSelector(IStrategy.createIE.selector, data1), abi.encode());
 
         // Second IE
         vm.mockCall(
-            address(mockStrategy2), abi.encodeWithSelector(IStrategy.initialize.selector, 1, data2), abi.encode()
+            address(mockStrategy2),
+            abi.encodeWithSelector(IStrategy.initialize.selector, 1, initializeData, address(scaffoldIE)),
+            abi.encode()
         );
         vm.mockCall(address(mockStrategy2), abi.encodeWithSelector(IStrategy.createIE.selector, data2), abi.encode());
 
         vm.prank(owner);
-        scaffoldIE.createIE(data1, address(mockStrategy));
+        scaffoldIE.createIE(data1, initializeData, address(mockStrategy));
 
         vm.prank(owner);
-        scaffoldIE.createIE(data2, address(mockStrategy2));
+        scaffoldIE.createIE(data2, initializeData, address(mockStrategy2));
 
         // Verify results
         assertEq(scaffoldIE.getPoolCount(), 2);
@@ -276,10 +275,11 @@ contract ScaffoldIETest is Test {
     // Test using actual MockStrategy
     function testMockStrategyDirect() public {
         bytes memory data = abi.encode("test data");
+        bytes memory initializeData = abi.encode(address(0), address(0), bytes32(0), address(0));
 
         // Use actual MockStrategy for testing
         vm.prank(owner);
-        scaffoldIE.createIE(data, address(mockStrategy));
+        scaffoldIE.createIE(data, initializeData, address(mockStrategy));
 
         // Verify results
         assertEq(scaffoldIE.getPoolCount(), 1);

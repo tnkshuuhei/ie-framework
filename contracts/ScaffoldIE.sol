@@ -50,17 +50,17 @@ contract ScaffoldIE is IScaffoldIE, AccessControl, Pausable {
         emit RouteUpdated(rootSplit, _allocations, msg.sender);
     }
 
-    function createIE(bytes memory _data, address strategy) external {
+    function createIE(bytes memory _data, bytes memory _initializeData, address strategy) external {
         require(strategy != address(0), InvalidStrategy());
         // TODO: strategy contract should be a clone
-        _createIE(_data, strategy);
+        _createIE(_data, _initializeData, strategy);
         poolIdToStrategy[poolCount] = strategy;
         emit PoolCreated(poolCount, strategy);
         poolCount++;
     }
 
-    function _createIE(bytes memory _data, address strategy) internal {
-        IStrategy(strategy).initialize(poolCount, _data);
+    function _createIE(bytes memory _data, bytes memory _initializeData, address strategy) internal {
+        IStrategy(strategy).initialize(poolCount, _initializeData, address(this));
         IStrategy(strategy).createIE(_data);
     }
 

@@ -16,9 +16,9 @@ abstract contract BaseIEStrategy is IStrategy {
         _;
     }
 
-    constructor(address _scaffoldIE, string memory _name) {
-        scaffoldIE = IScaffoldIE(_scaffoldIE);
-        name = _name;
+    modifier onlyInitialized() {
+        require(initialized, NotInitialized());
+        _;
     }
 
     function getPoolId() external view returns (uint256) {
@@ -50,12 +50,17 @@ abstract contract BaseIEStrategy is IStrategy {
 
     function _afterEvaluation(bytes memory _data) internal virtual { }
 
-    function initialize(uint256 _poolId, bytes memory _data) external virtual {
-        __BaseStrategyInit(_poolId, _data);
+    function initialize(uint256 _poolId, bytes memory _initializeData, address _scaffoldIE) external {
+        scaffoldIE = IScaffoldIE(_scaffoldIE);
+
+        __BaseStrategyInit(_poolId, _initializeData);
     }
 
-    function __BaseStrategyInit(uint256 _poolId, bytes memory _data) internal virtual {
+    function _initialize(bytes memory _initializeData) internal virtual { }
+
+    function __BaseStrategyInit(uint256 _poolId, bytes memory _initializeData) internal {
         require(!initialized, AlreadyInitialized());
+        _initialize(_initializeData);
         poolId = _poolId;
         _setInitialized();
     }

@@ -33,20 +33,12 @@ contract RetroStrategyTest is Test {
     function setUp() public {
         configureChain();
         scaffoldIE = new ScaffoldIE(admin, address(splits));
-        retroFunding = new RetroFunding(admin, address(scaffoldIE), address(eas), schemaUID);
-
-        // Grant roles
-        vm.startPrank(admin);
-        scaffoldIE.grantRole(scaffoldIE.getSplitterRole(), splitter);
-        scaffoldIE.grantRole(scaffoldIE.getEvaluatorRole(), evaluator);
-        retroFunding.grantRole(retroFunding.EVALUATOR_ROLE(), evaluator);
-        vm.stopPrank();
+        retroFunding = new RetroFunding(); // implementation
     }
 
     function testDeployments() public view {
         assertNotEq(address(scaffoldIE), address(0));
         assertNotEq(address(retroFunding), address(0));
-        assertEq(address(retroFunding.eas()), address(eas));
     }
 
     function testCreateIE() public {
@@ -59,9 +51,11 @@ contract RetroStrategyTest is Test {
         _initialAllocations[1] = 5e5;
         bytes memory data = abi.encode(_recipients, _initialAllocations);
 
+        bytes memory initializeData = abi.encode(address(eas), schemaUID, admin);
+
         // Execute test
         vm.startPrank(admin);
-        scaffoldIE.createIE(data, address(retroFunding));
+        scaffoldIE.createIE(data, initializeData, address(retroFunding));
 
         // Verify results
         assertEq(scaffoldIE.getPoolCount(), 1);
@@ -87,8 +81,12 @@ contract RetroStrategyTest is Test {
         assertEq(allocations[0] + allocations[1], 1e6);
         assertEq(scaffoldIE.getPoolCount(), 2);
 
+        vm.startPrank(admin);
+        scaffoldIE.grantRole(scaffoldIE.getSplitterRole(), splitter);
+        vm.stopPrank();
+
         // Execute test
-        vm.prank(splitter);
+        vm.startPrank(splitter);
         scaffoldIE.createIERoute(allocations);
 
         // Verify results
@@ -106,6 +104,10 @@ contract RetroStrategyTest is Test {
         uint32[] memory newAllocations = new uint32[](2);
         newAllocations[0] = 5e5;
         newAllocations[1] = 5e5;
+
+        vm.startPrank(admin);
+        scaffoldIE.grantRole(scaffoldIE.getSplitterRole(), splitter);
+        vm.stopPrank();
 
         // Execute test
         vm.prank(splitter);
@@ -177,13 +179,17 @@ contract RetroStrategyTest is Test {
         bytes memory evaluationData =
             abi.encode(dataset, recipients, allocations, address(retroFunding), block.chainid, evaluator);
 
+        vm.startPrank(admin);
+        scaffoldIE.addEvaluator(0, evaluator, admin);
+        vm.stopPrank();
+
         // Execute test
-        vm.prank(evaluator);
+        vm.startPrank(evaluator);
         scaffoldIE.evaluate(0, evaluationData, evaluator);
     }
 
     function _deployStrategy() internal prankception(admin) returns (address strategy) {
-        strategy = address(new RetroFunding(admin, address(scaffoldIE), address(eas), schemaUID));
+        strategy = address(new RetroFunding()); // implementation
         return strategy;
     }
 
@@ -197,7 +203,9 @@ contract RetroStrategyTest is Test {
         _initialAllocations[1] = 5e5;
         bytes memory data = abi.encode(_recipients, _initialAllocations);
 
-        scaffoldIE.createIE(data, strategy);
+        bytes memory initializeData = abi.encode(address(eas), schemaUID, admin);
+
+        scaffoldIE.createIE(data, initializeData, strategy);
     }
 
     function configureChain() public {

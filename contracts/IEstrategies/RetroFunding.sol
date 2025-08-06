@@ -29,15 +29,26 @@ contract RetroFunding is BaseIEStrategy, AccessControl, Pausable {
     error InvalidManager(address _caller);
 
     // Constructor
-    constructor(
-        address _admin,
-        address _scaffoldIE,
-        address _eas,
-        bytes32 _schemaUID
-    )
-        BaseIEStrategy(_scaffoldIE, "RetroFundingStrategy")
-    {
-        // TODO: consider using hypercerts v2 attestations for eval, measurement
+    // constructor(
+    //     address _admin,
+    //     address _scaffoldIE,
+    //     address _eas,
+    //     bytes32 _schemaUID
+    // )
+    //     BaseIEStrategy(_scaffoldIE, "RetroFundingStrategy")
+    // {
+    //     // TODO: consider using hypercerts v2 attestations for eval, measurement
+    //     eas = IEAS(_eas);
+    //     schemaUID = _schemaUID;
+
+    //     _grantRole(DEFAULT_ADMIN_ROLE, _admin);
+    //     _grantRole(PAUSER_ROLE, _admin);
+    // }
+
+    function _initialize(bytes memory _initializeData) internal override {
+        name = "RetroFundingStrategy";
+
+        (address _eas, bytes32 _schemaUID, address _admin) = abi.decode(_initializeData, (address, bytes32, address));
         eas = IEAS(_eas);
         schemaUID = _schemaUID;
 
@@ -50,15 +61,20 @@ contract RetroFunding is BaseIEStrategy, AccessControl, Pausable {
         return splitsContract;
     }
 
-    function initialize(uint256 _poolId, bytes memory _data) external override onlyScaffoldIE {
-        __BaseStrategyInit(_poolId, _data);
-    }
-
-    function createIE(bytes memory _data) external override onlyScaffoldIE {
+    function createIE(bytes memory _data) external override onlyScaffoldIE onlyInitialized {
         _createIE(_data);
     }
 
-    function evaluate(bytes memory _data, address _caller) external override onlyEvaluator(_caller) onlyScaffoldIE {
+    function evaluate(
+        bytes memory _data,
+        address _caller
+    )
+        external
+        override
+        onlyEvaluator(_caller)
+        onlyScaffoldIE
+        onlyInitialized
+    {
         _beforeEvaluation(_data);
         _evaluate(_data);
     }
@@ -71,6 +87,7 @@ contract RetroFunding is BaseIEStrategy, AccessControl, Pausable {
         override
         onlyManager(_caller)
         onlyScaffoldIE
+        onlyInitialized
     {
         _registerRecipients(_recipients);
     }
@@ -87,6 +104,7 @@ contract RetroFunding is BaseIEStrategy, AccessControl, Pausable {
         override
         onlyManager(_caller)
         onlyScaffoldIE
+        onlyInitialized
     {
         _updateRecipients(_recipients);
     }
@@ -148,19 +166,19 @@ contract RetroFunding is BaseIEStrategy, AccessControl, Pausable {
         return recipients;
     }
 
-    function addEvaluator(address _evaluator, address _caller) external onlyAdmin(_caller) {
+    function addEvaluator(address _evaluator, address _caller) external onlyAdmin(_caller) onlyInitialized {
         _grantRole(EVALUATOR_ROLE, _evaluator);
     }
 
-    function removeEvaluator(address _evaluator, address _caller) external onlyAdmin(_caller) {
+    function removeEvaluator(address _evaluator, address _caller) external onlyAdmin(_caller) onlyInitialized {
         _revokeRole(EVALUATOR_ROLE, _evaluator);
     }
 
-    function addManager(address _manager, address _caller) external onlyAdmin(_caller) {
+    function addManager(address _manager, address _caller) external onlyAdmin(_caller) onlyInitialized {
         _grantRole(MANAGER_ROLE, _manager);
     }
 
-    function removeManager(address _manager, address _caller) external onlyAdmin(_caller) {
+    function removeManager(address _manager, address _caller) external onlyAdmin(_caller) onlyInitialized {
         _revokeRole(MANAGER_ROLE, _manager);
     }
 

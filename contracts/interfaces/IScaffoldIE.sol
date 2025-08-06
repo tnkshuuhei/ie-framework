@@ -22,7 +22,7 @@ interface IScaffoldIE is IAccessControl {
 
     function updateRoute(uint32[] memory _allocations) external;
 
-    function createIE(bytes memory _data, address strategy) external;
+    function createIE(bytes memory _data, bytes memory _initializeData, address strategy) external;
 
     function getStrategy(uint256 _poolId) external view returns (address);
 
