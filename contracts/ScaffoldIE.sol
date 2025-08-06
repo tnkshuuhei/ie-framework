@@ -3,6 +3,7 @@ pragma solidity >=0.8.29;
 
 import { AccessControl } from "@openzeppelin/contracts/access/AccessControl.sol";
 import { Pausable } from "@openzeppelin/contracts/utils/Pausable.sol";
+import { Clones } from "@openzeppelin/contracts/proxy/Clones.sol";
 
 import { ISplitMain } from "./interfaces/ISplitMain.sol";
 import { IScaffoldIE } from "./interfaces/IScaffoldIE.sol";
@@ -18,6 +19,9 @@ contract ScaffoldIE is IScaffoldIE, AccessControl, Pausable {
 
     // poolId => strategy
     mapping(uint256 => address) public poolIdToStrategy;
+
+    // strategy => cloneable
+    mapping(address => bool) public cloneableStrategy;
 
     constructor(address _admin, address _splits) {
         _grantRole(DEFAULT_ADMIN_ROLE, _admin);
@@ -52,10 +56,13 @@ contract ScaffoldIE is IScaffoldIE, AccessControl, Pausable {
 
     function createIE(bytes memory _data, bytes memory _initializeData, address strategy) external {
         require(strategy != address(0), InvalidStrategy());
-        // TODO: strategy contract should be a clone
-        _createIE(_data, _initializeData, strategy);
-        poolIdToStrategy[poolCount] = strategy;
-        emit PoolCreated(poolCount, strategy);
+        require(_isCloneableStrategy(strategy), InvalidStrategy());
+
+        address clone = Clones.clone(strategy);
+
+        _createIE(_data, _initializeData, clone);
+        poolIdToStrategy[poolCount] = clone;
+        emit PoolCreated(poolCount, clone);
         poolCount++;
     }
 
@@ -134,5 +141,17 @@ contract ScaffoldIE is IScaffoldIE, AccessControl, Pausable {
     function removeManager(uint256 _poolId, address _manager, address _caller) external {
         require(msg.sender == _caller, InvalidCaller());
         IStrategy(poolIdToStrategy[_poolId]).removeManager(_manager, _caller);
+    }
+
+    function setCloneableStrategy(address _strategy, bool _cloneable) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        cloneableStrategy[_strategy] = _cloneable;
+    }
+
+    function isCloneableStrategy(address _strategy) external view returns (bool) {
+        return _isCloneableStrategy(_strategy);
+    }
+
+    function _isCloneableStrategy(address _strategy) internal view returns (bool) {
+        return cloneableStrategy[_strategy];
     }
 }

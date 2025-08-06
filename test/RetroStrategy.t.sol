@@ -29,11 +29,16 @@ contract RetroStrategyTest is Test {
     address public recipient1 = address(0x1);
     address public recipient2 = address(0x2);
     address public recipient3 = address(0x3);
+    address public recipient4 = address(0x4);
 
     function setUp() public {
         configureChain();
         scaffoldIE = new ScaffoldIE(admin, address(splits));
         retroFunding = new RetroFunding(); // implementation
+
+        vm.startPrank(admin);
+        scaffoldIE.setCloneableStrategy(address(retroFunding), true);
+        vm.stopPrank();
     }
 
     function testDeployments() public view {
@@ -59,7 +64,9 @@ contract RetroStrategyTest is Test {
 
         // Verify results
         assertEq(scaffoldIE.getPoolCount(), 1);
-        assertEq(scaffoldIE.getStrategy(0), address(retroFunding));
+        // Get the actual strategy address that was created
+        address actualStrategy = scaffoldIE.getStrategy(0);
+        assertNotEq(actualStrategy, address(0));
         vm.stopPrank();
     }
 
@@ -67,8 +74,7 @@ contract RetroStrategyTest is Test {
         // Create IE beforehand
         testCreateIE();
         // Create second IE
-        address strategy2 = _deployStrategy();
-        _createIE(strategy2);
+        _createIE(address(retroFunding));
 
         // Mock ISplitMain.createSplit call
         address[] memory IEs = new address[](2);
@@ -131,7 +137,8 @@ contract RetroStrategyTest is Test {
         vm.stopPrank();
 
         // Check RetroFunding state
-        address[] memory storedRecipients = retroFunding.getRecipients();
+        address strategyAddress = scaffoldIE.getStrategy(0);
+        address[] memory storedRecipients = RetroFunding(strategyAddress).getRecipients();
         assertEq(storedRecipients.length, 2);
         assertEq(storedRecipients[0], recipient1);
         assertEq(storedRecipients[1], recipient2);
@@ -156,7 +163,8 @@ contract RetroStrategyTest is Test {
         vm.stopPrank();
 
         // Check RetroFunding state
-        address[] memory storedRecipients = retroFunding.getRecipients();
+        address strategyAddress = scaffoldIE.getStrategy(0);
+        address[] memory storedRecipients = RetroFunding(strategyAddress).getRecipients();
         assertEq(storedRecipients.length, 3);
         assertEq(storedRecipients[0], recipient1);
         assertEq(storedRecipients[1], recipient2);
@@ -188,19 +196,20 @@ contract RetroStrategyTest is Test {
         scaffoldIE.evaluate(0, evaluationData, evaluator);
     }
 
-    function _deployStrategy() internal prankception(admin) returns (address strategy) {
-        strategy = address(new RetroFunding()); // implementation
-        return strategy;
-    }
-
     function _createIE(address strategy) internal prankception(admin) {
-        address[] memory _recipients = new address[](2);
+        address[] memory _recipients = new address[](4);
         _recipients[0] = recipient1;
         _recipients[1] = recipient2;
+        _recipients[2] = recipient3;
+        _recipients[3] = recipient4;
 
-        uint32[] memory _initialAllocations = new uint32[](2);
-        _initialAllocations[0] = 5e5;
-        _initialAllocations[1] = 5e5;
+        uint32[] memory _initialAllocations = new uint32[](4);
+        // 1e6 = 1,000,000
+        _initialAllocations[0] = 250_000;
+        _initialAllocations[1] = 250_000;
+        _initialAllocations[2] = 250_000;
+        _initialAllocations[3] = 250_000;
+
         bytes memory data = abi.encode(_recipients, _initialAllocations);
 
         bytes memory initializeData = abi.encode(address(eas), schemaUID, admin);
