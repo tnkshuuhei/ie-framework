@@ -12,7 +12,7 @@ abstract contract BaseIEStrategy is IStrategy {
     bool public initialized;
 
     modifier onlyScaffoldIE() {
-        require(msg.sender == address(scaffoldIE), OnlyScaffoldIE());
+        require(msg.sender == address(scaffoldIE), OnlyScaffoldIE(msg.sender));
         _;
     }
 
@@ -50,11 +50,11 @@ abstract contract BaseIEStrategy is IStrategy {
 
     function _afterEvaluation(bytes memory _data) internal virtual { }
 
-    function initialize(uint256 _poolId, bytes memory _data) external {
+    function initialize(uint256 _poolId, bytes memory _data) external virtual {
         __BaseStrategyInit(_poolId, _data);
     }
 
-    function __BaseStrategyInit(uint256 _poolId, bytes memory _data) internal {
+    function __BaseStrategyInit(uint256 _poolId, bytes memory _data) internal virtual {
         require(!initialized, AlreadyInitialized());
         poolId = _poolId;
         _setInitialized();

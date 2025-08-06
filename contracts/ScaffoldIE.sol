@@ -25,7 +25,7 @@ contract ScaffoldIE is IScaffoldIE, AccessControl, Pausable {
     }
 
     function createIERoute(uint32[] memory _initialAllocations, address _caller) external onlyRole(SPLITTER_ROLE) {
-        require(msg.sender == _caller, InvalidCaller(_caller));
+        require(msg.sender == _caller, InvalidCaller());
 
         address[] memory IEs = new address[](poolCount);
 
@@ -39,7 +39,7 @@ contract ScaffoldIE is IScaffoldIE, AccessControl, Pausable {
     }
 
     function updateRoute(uint32[] memory _allocations, address _caller) external onlyRole(SPLITTER_ROLE) {
-        require(msg.sender == _caller, InvalidCaller(_caller));
+        require(msg.sender == _caller, InvalidCaller());
 
         address[] memory IEs = new address[](poolCount);
 
@@ -55,9 +55,8 @@ contract ScaffoldIE is IScaffoldIE, AccessControl, Pausable {
     function createIE(bytes memory _data, address strategy) external {
         _createIE(_data, strategy);
         poolIdToStrategy[poolCount] = strategy;
-        poolCount++;
-
         emit PoolCreated(poolCount, strategy);
+        poolCount++;
     }
 
     function _createIE(bytes memory _data, address strategy) internal {
@@ -66,19 +65,19 @@ contract ScaffoldIE is IScaffoldIE, AccessControl, Pausable {
     }
 
     function registerRecipients(uint256 _poolId, address[] memory _recipients, address _caller) external {
-        require(msg.sender == _caller, InvalidCaller(_caller));
+        require(msg.sender == _caller, InvalidCaller());
         require(poolIdToStrategy[_poolId] != address(0), PoolNotFound(_poolId));
         IStrategy(poolIdToStrategy[_poolId]).registerRecipients(_recipients, _caller);
     }
 
     function updateRecipients(uint256 _poolId, address[] memory _recipients, address _caller) external {
-        require(msg.sender == _caller, InvalidCaller(_caller));
+        require(msg.sender == _caller, InvalidCaller());
         require(poolIdToStrategy[_poolId] != address(0), PoolNotFound(_poolId));
         IStrategy(poolIdToStrategy[_poolId]).updateRecipients(_recipients, _caller);
     }
 
     function evaluate(uint256 _poolId, bytes memory _data, address _caller) external {
-        require(msg.sender == _caller, InvalidCaller(_caller));
+        require(msg.sender == _caller, InvalidCaller());
         require(poolIdToStrategy[_poolId] != address(0), PoolNotFound(_poolId));
         IStrategy(poolIdToStrategy[_poolId]).evaluate(_data, _caller);
     }
