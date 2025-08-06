@@ -54,7 +54,7 @@ contract MockStrategy is BaseIEStrategy {
         recipients = _recipients;
     }
 
-    // テスト用のヘルパー関数
+    // Helper function for testing
     function setStrategyAddress(address _address) external {
         strategyAddress = _address;
     }
@@ -79,14 +79,14 @@ contract ScaffoldIETest is Test {
     address public recipient3 = address(0x3);
 
     function setUp() public {
-        // モックコントラクトを作成
+        // Create mock contracts
         mockSplits = ISplitMain(makeAddr("mockSplits"));
         mockStrategy = new MockStrategy();
 
-        // ScaffoldIEをデプロイ
+        // Deploy ScaffoldIE
         scaffoldIE = new ScaffoldIE(owner, address(mockSplits));
 
-        // ロールを付与
+        // Grant roles
         vm.startPrank(owner);
         scaffoldIE.grantRole(scaffoldIE.getSplitterRole(), splitter);
         console2.logBytes32(scaffoldIE.getSplitterRole());
@@ -98,36 +98,36 @@ contract ScaffoldIETest is Test {
     function testCreateIE() public {
         bytes memory data = abi.encode("test data");
 
-        // IStrategy.initializeの呼び出しをモック
+        // Mock IStrategy.initialize call
         vm.mockCall(address(mockStrategy), abi.encodeWithSelector(IStrategy.initialize.selector, 0, data), abi.encode());
 
-        // IStrategy.createIEの呼び出しをモック
+        // Mock IStrategy.createIE call
         vm.mockCall(address(mockStrategy), abi.encodeWithSelector(IStrategy.createIE.selector, data), abi.encode());
 
-        // テスト実行
+        // Execute test
         vm.prank(owner);
         scaffoldIE.createIE(data, address(mockStrategy));
 
-        // 結果を検証
+        // Verify results
         assertEq(scaffoldIE.getPoolCount(), 1);
         assertEq(scaffoldIE.getStrategy(0), address(mockStrategy));
     }
 
     function testCreateIERoute() public {
-        // 事前にIEを作成
+        // Create IE beforehand
         bytes memory data = abi.encode("test data");
         vm.prank(owner);
         scaffoldIE.createIE(data, address(mockStrategy));
 
-        // 2つ目のIEを作成
+        // Create second IE
         MockStrategy mockStrategy2 = new MockStrategy();
         vm.prank(owner);
         scaffoldIE.createIE(data, address(mockStrategy2));
 
-        // ISplitMain.createSplitの呼び出しをモック
+        // Mock ISplitMain.createSplit call
         address[] memory IEs = new address[](2);
-        IEs[0] = address(mockStrategy); // 実際のコントラクトアドレス
-        IEs[1] = address(mockStrategy2); // 実際のコントラクトアドレス
+        IEs[0] = address(mockStrategy); // Actual contract address
+        IEs[1] = address(mockStrategy2); // Actual contract address
         uint32[] memory allocations = new uint32[](2);
         allocations[0] = 5e5;
         allocations[1] = 5e5;
@@ -138,27 +138,27 @@ contract ScaffoldIETest is Test {
         vm.mockCall(
             address(mockSplits),
             abi.encodeWithSelector(ISplitMain.createSplit.selector, IEs, allocations, 0, address(scaffoldIE)),
-            abi.encode(address(0x789)) // 作成されたスプリットのアドレス
+            abi.encode(address(0x789)) // Created split address
         );
 
-        // テスト実行
+        // Execute test
         vm.prank(splitter);
         scaffoldIE.createIERoute(allocations, splitter);
 
-        // 結果を検証
+        // Verify results
         assertEq(scaffoldIE.getRootSplit(), address(0x789));
     }
 
     function testUpdateRoute() public {
-        // 事前にルートを作成
+        // Create route beforehand
         testCreateIERoute();
 
-        // IStrategy.getAddressの呼び出しをモック
+        // Mock IStrategy.getAddress call
         vm.mockCall(
             address(mockStrategy), abi.encodeWithSelector(IStrategy.getAddress.selector), abi.encode(address(0x123))
         );
 
-        // ISplitMain.updateSplitの呼び出しをモック
+        // Mock ISplitMain.updateSplit call
         address[] memory IEs = new address[](1);
         IEs[0] = address(0x123);
         uint32[] memory newAllocations = new uint32[](1);
@@ -170,33 +170,33 @@ contract ScaffoldIETest is Test {
             abi.encode()
         );
 
-        // テスト実行
+        // Execute test
         vm.prank(splitter);
         scaffoldIE.updateRoute(newAllocations, splitter);
     }
 
     function testRegisterRecipients() public {
-        // 事前にIEを作成
+        // Create IE beforehand
         testCreateIE();
 
         address[] memory recipients = new address[](2);
         recipients[0] = recipient1;
         recipients[1] = recipient2;
 
-        // IStrategy.registerRecipientsの呼び出しをモック
+        // Mock IStrategy.registerRecipients call
         vm.mockCall(
             address(mockStrategy),
             abi.encodeWithSelector(IStrategy.registerRecipients.selector, recipients, owner),
             abi.encode()
         );
 
-        // テスト実行
+        // Execute test
         vm.prank(owner);
         scaffoldIE.registerRecipients(0, recipients, owner);
     }
 
     function testUpdateRecipients() public {
-        // 事前にIEを作成
+        // Create IE beforehand
         testCreateIE();
 
         address[] memory newRecipients = new address[](3);
@@ -204,32 +204,32 @@ contract ScaffoldIETest is Test {
         newRecipients[1] = recipient2;
         newRecipients[2] = recipient3;
 
-        // IStrategy.updateRecipientsの呼び出しをモック
+        // Mock IStrategy.updateRecipients call
         vm.mockCall(
             address(mockStrategy),
             abi.encodeWithSelector(IStrategy.updateRecipients.selector, newRecipients, owner),
             abi.encode()
         );
 
-        // テスト実行
+        // Execute test
         vm.prank(owner);
         scaffoldIE.updateRecipients(0, newRecipients, owner);
     }
 
     function testEvaluate() public {
-        // 事前にIEを作成
+        // Create IE beforehand
         testCreateIE();
 
         bytes memory evaluationData = abi.encode("evaluation data");
 
-        // IStrategy.evaluateの呼び出しをモック
+        // Mock IStrategy.evaluate call
         vm.mockCall(
             address(mockStrategy),
             abi.encodeWithSelector(IStrategy.evaluate.selector, evaluationData, evaluator),
             abi.encode()
         );
 
-        // テスト実行
+        // Execute test
         vm.prank(evaluator);
         scaffoldIE.evaluate(0, evaluationData, evaluator);
     }
@@ -237,17 +237,17 @@ contract ScaffoldIETest is Test {
     function testMultipleIEs() public {
         MockStrategy mockStrategy2 = new MockStrategy();
 
-        // 複数のIEを作成
+        // Create multiple IEs
         bytes memory data1 = abi.encode("data1");
         bytes memory data2 = abi.encode("data2");
 
-        // 1つ目のIE
+        // First IE
         vm.mockCall(
             address(mockStrategy), abi.encodeWithSelector(IStrategy.initialize.selector, 0, data1), abi.encode()
         );
         vm.mockCall(address(mockStrategy), abi.encodeWithSelector(IStrategy.createIE.selector, data1), abi.encode());
 
-        // 2つ目のIE
+        // Second IE
         vm.mockCall(
             address(mockStrategy2), abi.encodeWithSelector(IStrategy.initialize.selector, 1, data2), abi.encode()
         );
@@ -259,7 +259,7 @@ contract ScaffoldIETest is Test {
         vm.prank(owner);
         scaffoldIE.createIE(data2, address(mockStrategy2));
 
-        // 結果を検証
+        // Verify results
         assertEq(scaffoldIE.getPoolCount(), 2);
         assertEq(scaffoldIE.getStrategy(0), address(mockStrategy));
         assertEq(scaffoldIE.getStrategy(1), address(mockStrategy2));
@@ -268,41 +268,41 @@ contract ScaffoldIETest is Test {
     function testAccessControl() public {
         bytes memory data = abi.encode("test data");
 
-        // 権限のないユーザーがcreateIEを呼び出そうとする
+        // Unauthorized user tries to call createIE
         vm.prank(makeAddr("unauthorized"));
         vm.expectRevert();
         scaffoldIE.createIERoute(new uint32[](1), makeAddr("unauthorized"));
     }
 
-    // 実際のMockStrategyを使用したテスト
+    // Test using actual MockStrategy
     function testMockStrategyDirect() public {
         bytes memory data = abi.encode("test data");
 
-        // 実際のMockStrategyを使用してテスト
+        // Use actual MockStrategy for testing
         vm.prank(owner);
         scaffoldIE.createIE(data, address(mockStrategy));
 
-        // 結果を検証
+        // Verify results
         assertEq(scaffoldIE.getPoolCount(), 1);
         assertEq(scaffoldIE.getStrategy(0), address(mockStrategy));
 
-        // MockStrategyの状態を確認
+        // Check MockStrategy state
         assertEq(mockStrategy.getPoolId(), 0);
     }
 
     function testMockStrategyRecipients() public {
-        // 事前にIEを作成
+        // Create IE beforehand
         testMockStrategyDirect();
 
         address[] memory recipients = new address[](2);
         recipients[0] = recipient1;
         recipients[1] = recipient2;
 
-        // 実際のMockStrategyを使用してテスト
+        // Use actual MockStrategy for testing
         vm.prank(owner);
         scaffoldIE.registerRecipients(0, recipients, owner);
 
-        // MockStrategyの状態を確認
+        // Check MockStrategy state
         address[] memory storedRecipients = mockStrategy.getRecipients();
         assertEq(storedRecipients.length, 2);
         assertEq(storedRecipients[0], recipient1);
@@ -310,17 +310,17 @@ contract ScaffoldIETest is Test {
     }
 
     function testMockStrategyEvaluate() public {
-        // 事前にIEを作成
+        // Create IE beforehand
         testMockStrategyDirect();
 
         bytes memory evaluationData = abi.encode("evaluation data");
 
-        // 実際のMockStrategyを使用してテスト
+        // Use actual MockStrategy for testing
         vm.prank(evaluator);
         scaffoldIE.evaluate(0, evaluationData, evaluator);
 
-        // イベントが発行されたことを確認（実際のMockStrategyを使用）
-        // このテストでは実際のコントラクトが呼ばれるため、イベントが発行される
+        // Verify that events are emitted (using actual MockStrategy)
+        // In this test, actual contracts are called, so events are emitted
     }
 
     modifier prankception(address prankee) {
