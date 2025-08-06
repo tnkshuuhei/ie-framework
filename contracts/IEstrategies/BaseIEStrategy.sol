@@ -6,26 +6,23 @@ import { IStrategy } from "../interfaces/IStrategy.sol";
 
 abstract contract BaseIEStrategy is IStrategy {
     IScaffoldIE public scaffoldIE;
-
+    uint256 public poolId;
     string public name;
-
     address[] public recipients;
-
-    mapping(uint256 => bool) private initialized;
-
-    error NotImplemented();
-
-    error AlreadyInitialized();
-    error OnlyScaffoldIE();
+    bool public initialized;
 
     modifier onlyScaffoldIE() {
-        require(msg.sender == address(scaffoldIE), OnlyScaffoldIE());
+        require(msg.sender == address(scaffoldIE), OnlyScaffoldIE(msg.sender));
         _;
     }
 
     constructor(address _scaffoldIE, string memory _name) {
         scaffoldIE = IScaffoldIE(_scaffoldIE);
         name = _name;
+    }
+
+    function getPoolId() external view returns (uint256) {
+        return poolId;
     }
 
     function createIE(bytes memory _data) external virtual { }
@@ -45,7 +42,7 @@ abstract contract BaseIEStrategy is IStrategy {
 
     function _registerRecipients(address[] memory _recipients) internal virtual { }
 
-    function getRecipients() external view returns (address[] memory) { }
+    function getRecipients() external view virtual returns (address[] memory) { }
 
     function _evaluate(bytes memory _data) internal virtual { }
 
@@ -53,14 +50,17 @@ abstract contract BaseIEStrategy is IStrategy {
 
     function _afterEvaluation(bytes memory _data) internal virtual { }
 
-    function initialize(uint256 _poolId, bytes memory _data) external virtual onlyScaffoldIE {
+    function initialize(uint256 _poolId, bytes memory _data) external virtual {
         __BaseStrategyInit(_poolId, _data);
     }
 
     function __BaseStrategyInit(uint256 _poolId, bytes memory _data) internal virtual {
-        if (initialized[_poolId]) {
-            revert AlreadyInitialized();
-        }
-        initialized[_poolId] = true;
+        require(!initialized, AlreadyInitialized());
+        poolId = _poolId;
+        _setInitialized();
+    }
+
+    function _setInitialized() internal {
+        initialized = true;
     }
 }
