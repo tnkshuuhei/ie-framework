@@ -13,13 +13,13 @@ interface IScaffoldIE is IAccessControl {
 
     function getSplits() external view returns (address);
 
-    function createIERoute(uint32[] memory _initialAllocations, address _caller) external;
+    function createIERoute(uint32[] memory _initialAllocations) external;
 
     function registerRecipients(uint256 _poolId, address[] memory _recipients, address _caller) external;
 
     function updateRecipients(uint256 _poolId, address[] memory _recipients, address _caller) external;
 
-    function updateRoute(uint32[] memory _allocations, address _caller) external;
+    function updateRoute(uint32[] memory _allocations) external;
 
     function createIE(bytes memory _data, address strategy) external;
 

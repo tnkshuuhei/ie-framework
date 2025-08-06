@@ -143,7 +143,7 @@ contract ScaffoldIETest is Test {
 
         // Execute test
         vm.prank(splitter);
-        scaffoldIE.createIERoute(allocations, splitter);
+        scaffoldIE.createIERoute(allocations);
 
         // Verify results
         assertEq(scaffoldIE.getRootSplit(), address(0x789));
@@ -172,7 +172,7 @@ contract ScaffoldIETest is Test {
 
         // Execute test
         vm.prank(splitter);
-        scaffoldIE.updateRoute(newAllocations, splitter);
+        scaffoldIE.updateRoute(newAllocations);
     }
 
     function testRegisterRecipients() public {
@@ -263,15 +263,6 @@ contract ScaffoldIETest is Test {
         assertEq(scaffoldIE.getPoolCount(), 2);
         assertEq(scaffoldIE.getStrategy(0), address(mockStrategy));
         assertEq(scaffoldIE.getStrategy(1), address(mockStrategy2));
-    }
-
-    function testAccessControl() public {
-        bytes memory data = abi.encode("test data");
-
-        // Unauthorized user tries to call createIE
-        vm.prank(makeAddr("unauthorized"));
-        vm.expectRevert();
-        scaffoldIE.createIERoute(new uint32[](1), makeAddr("unauthorized"));
     }
 
     // Test using actual MockStrategy

@@ -24,9 +24,7 @@ contract ScaffoldIE is IScaffoldIE, AccessControl, Pausable {
         splits = ISplitMain(_splits);
     }
 
-    function createIERoute(uint32[] memory _initialAllocations, address _caller) external onlyRole(SPLITTER_ROLE) {
-        require(msg.sender == _caller, InvalidCaller());
-
+    function createIERoute(uint32[] memory _initialAllocations) external onlyRole(SPLITTER_ROLE) {
         address[] memory IEs = new address[](poolCount);
 
         for (uint256 i = 0; i < poolCount; i++) {
@@ -35,12 +33,10 @@ contract ScaffoldIE is IScaffoldIE, AccessControl, Pausable {
 
         rootSplit = splits.createSplit(IEs, _initialAllocations, 0, address(this));
 
-        emit RouteCreated(rootSplit, _initialAllocations, _caller);
+        emit RouteCreated(rootSplit, _initialAllocations, msg.sender);
     }
 
-    function updateRoute(uint32[] memory _allocations, address _caller) external onlyRole(SPLITTER_ROLE) {
-        require(msg.sender == _caller, InvalidCaller());
-
+    function updateRoute(uint32[] memory _allocations) external onlyRole(SPLITTER_ROLE) {
         address[] memory IEs = new address[](poolCount);
 
         for (uint256 i = 0; i < poolCount; i++) {
@@ -49,7 +45,7 @@ contract ScaffoldIE is IScaffoldIE, AccessControl, Pausable {
 
         splits.updateSplit(rootSplit, IEs, _allocations, 0);
 
-        emit RouteUpdated(rootSplit, _allocations, _caller);
+        emit RouteUpdated(rootSplit, _allocations, msg.sender);
     }
 
     function createIE(bytes memory _data, address strategy) external {
@@ -99,11 +95,11 @@ contract ScaffoldIE is IScaffoldIE, AccessControl, Pausable {
     }
 
     function getSplitterRole() external pure returns (bytes32) {
-        return keccak256("SPLITTER_ROLE");
+        return SPLITTER_ROLE;
     }
 
     function getEvaluatorRole() external pure returns (bytes32) {
-        return keccak256("EVALUATOR_ROLE");
+        return EVALUATOR_ROLE;
     }
 
     function getPoolCount() external view returns (uint256) {
