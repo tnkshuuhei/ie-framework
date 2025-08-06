@@ -62,6 +62,14 @@ contract MockStrategy is BaseIEStrategy {
     function setRecipients(address[] memory _recipients) external {
         _registerRecipients(_recipients);
     }
+
+    function addEvaluator(address _evaluator, address _caller) external override { }
+
+    function removeEvaluator(address _evaluator, address _caller) external override { }
+
+    function addManager(address _manager, address _caller) external override { }
+
+    function removeManager(address _manager, address _caller) external override { }
 }
 
 contract ScaffoldIETest is Test {

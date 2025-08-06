@@ -16,5 +16,10 @@ interface IStrategy {
 
     function getRecipients() external view returns (address[] memory);
 
+    function addEvaluator(address _evaluator, address _caller) external;
+    function removeEvaluator(address _evaluator, address _caller) external;
+    function addManager(address _manager, address _caller) external;
+    function removeManager(address _manager, address _caller) external;
+
     function getAddress() external view returns (address);
 }

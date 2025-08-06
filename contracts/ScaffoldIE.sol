@@ -49,6 +49,7 @@ contract ScaffoldIE is IScaffoldIE, AccessControl, Pausable {
     }
 
     function createIE(bytes memory _data, address strategy) external {
+        // TODO: strategy contract should be a clone
         _createIE(_data, strategy);
         poolIdToStrategy[poolCount] = strategy;
         emit PoolCreated(poolCount, strategy);
@@ -108,5 +109,27 @@ contract ScaffoldIE is IScaffoldIE, AccessControl, Pausable {
 
     function getRootSplit() external view returns (address) {
         return rootSplit;
+    }
+
+    function addEvaluator(uint256 _poolId, address _evaluator, address _caller) external {
+        require(msg.sender == _caller, InvalidCaller());
+        require(poolIdToStrategy[_poolId] != address(0), PoolNotFound(_poolId));
+        IStrategy(poolIdToStrategy[_poolId]).addEvaluator(_evaluator, _caller);
+    }
+
+    function removeEvaluator(uint256 _poolId, address _evaluator, address _caller) external {
+        require(msg.sender == _caller, InvalidCaller());
+        require(poolIdToStrategy[_poolId] != address(0), PoolNotFound(_poolId));
+        IStrategy(poolIdToStrategy[_poolId]).removeEvaluator(_evaluator, _caller);
+    }
+
+    function addManager(uint256 _poolId, address _manager, address _caller) external {
+        require(msg.sender == _caller, InvalidCaller());
+        IStrategy(poolIdToStrategy[_poolId]).addManager(_manager, _caller);
+    }
+
+    function removeManager(uint256 _poolId, address _manager, address _caller) external {
+        require(msg.sender == _caller, InvalidCaller());
+        IStrategy(poolIdToStrategy[_poolId]).removeManager(_manager, _caller);
     }
 }
