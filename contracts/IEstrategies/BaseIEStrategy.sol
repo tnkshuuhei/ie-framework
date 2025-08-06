@@ -9,6 +9,7 @@ abstract contract BaseIEStrategy is IStrategy {
     uint256 public poolId;
     string public name;
     address[] public recipients;
+    bool public initialized;
 
     modifier onlyScaffoldIE() {
         require(msg.sender == address(scaffoldIE), OnlyScaffoldIE());
@@ -54,7 +55,12 @@ abstract contract BaseIEStrategy is IStrategy {
     }
 
     function __BaseStrategyInit(uint256 _poolId, bytes memory _data) internal {
-        // TODO: check if the poolId is already initialized
+        require(!initialized, AlreadyInitialized());
         poolId = _poolId;
+        _setInitialized();
+    }
+
+    function _setInitialized() internal {
+        initialized = true;
     }
 }
