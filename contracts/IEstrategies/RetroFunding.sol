@@ -30,6 +30,9 @@ contract RetroFunding is BaseIEStrategy, AccessControl, Pausable {
     error InvalidEvaluator(address _caller);
     error InvalidManager(address _caller);
 
+    /// @param _poolId The pool ID
+    /// @param _initializeData The initialization data
+    /// @param _scaffoldIE The scaffold IE address
     function initialize(uint256 _poolId, bytes memory _initializeData, address _scaffoldIE) external override {
         // Check that the caller is the ScaffoldIE contract
         require(msg.sender == _scaffoldIE, OnlyScaffoldIE(msg.sender));
@@ -39,6 +42,7 @@ contract RetroFunding is BaseIEStrategy, AccessControl, Pausable {
         __BaseStrategyInit(_poolId, _initializeData);
     }
 
+    /// @param _initializeData The initialization data
     function _initialize(bytes memory _initializeData) internal override {
         name = "RetroFundingStrategy";
 
@@ -51,14 +55,19 @@ contract RetroFunding is BaseIEStrategy, AccessControl, Pausable {
     }
 
     // Public/External functions
+
+    /// @return The splits contract address
     function getAddress() external view returns (address) {
         return splitsContract;
     }
 
+    /// @param _data The data for creating the IE
     function createIE(bytes memory _data) external override onlyScaffoldIE onlyInitialized {
         _createIE(_data);
     }
 
+    /// @param _data The evaluation data
+    /// @param _caller The caller address
     function evaluate(
         bytes memory _data,
         address _caller
@@ -73,6 +82,8 @@ contract RetroFunding is BaseIEStrategy, AccessControl, Pausable {
         _evaluate(_data);
     }
 
+    /// @param _recipients The recipients addresses
+    /// @param _caller The caller address
     function registerRecipients(
         address[] memory _recipients,
         address _caller
@@ -86,10 +97,13 @@ contract RetroFunding is BaseIEStrategy, AccessControl, Pausable {
         _registerRecipients(_recipients);
     }
 
+    /// @param _recipients The recipients addresses
     function _registerRecipients(address[] memory _recipients) internal override {
         recipients = _recipients;
     }
 
+    /// @param _recipients The recipients addresses
+    /// @param _caller The caller address
     function updateRecipients(
         address[] memory _recipients,
         address _caller
@@ -103,6 +117,7 @@ contract RetroFunding is BaseIEStrategy, AccessControl, Pausable {
         _updateRecipients(_recipients);
     }
 
+    /// @param _recipients The recipients addresses
     function _updateRecipients(address[] memory _recipients) internal {
         recipients = _recipients;
     }
