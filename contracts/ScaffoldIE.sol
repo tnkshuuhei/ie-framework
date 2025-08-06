@@ -28,7 +28,7 @@ contract ScaffoldIE is IScaffoldIE, AccessControl, Pausable {
         address[] memory IEs = new address[](poolCount);
 
         for (uint256 i = 0; i < poolCount; i++) {
-            require(poolIdToStrategy[i] != address(0), InvalidStrategy(i));
+            require(poolIdToStrategy[i] != address(0), InvalidStrategy());
             IEs[i] = IStrategy(poolIdToStrategy[i]).getAddress();
         }
 
@@ -41,7 +41,7 @@ contract ScaffoldIE is IScaffoldIE, AccessControl, Pausable {
         address[] memory IEs = new address[](poolCount);
 
         for (uint256 i = 0; i < poolCount; i++) {
-            require(poolIdToStrategy[i] != address(0), InvalidStrategy(i));
+            require(poolIdToStrategy[i] != address(0), InvalidStrategy());
             IEs[i] = IStrategy(poolIdToStrategy[i]).getAddress();
         }
 
@@ -51,6 +51,7 @@ contract ScaffoldIE is IScaffoldIE, AccessControl, Pausable {
     }
 
     function createIE(bytes memory _data, address strategy) external {
+        require(strategy != address(0), InvalidStrategy());
         // TODO: strategy contract should be a clone
         _createIE(_data, strategy);
         poolIdToStrategy[poolCount] = strategy;

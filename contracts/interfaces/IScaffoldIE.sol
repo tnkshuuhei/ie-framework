@@ -10,7 +10,7 @@ interface IScaffoldIE is IAccessControl {
 
     error InvalidCaller();
     error PoolNotFound(uint256 _poolId);
-    error InvalidStrategy(uint256 _poolId);
+    error InvalidStrategy();
 
     function getSplits() external view returns (address);
 
