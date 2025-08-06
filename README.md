@@ -2,6 +2,8 @@
 
 A smart contract scaffold for setting up Impact Evaluations (IE) with modular strategy patterns and retroactive funding mechanisms.
 
+[Example](https://app.splits.org/accounts/0xFDb21827d982ef73c851741DD0111F76e5113EbD/?chainId=11155111)
+
 ## Overview
 
 Scaffold IE is a modular smart contract system that enables the creation and management of Impact Evaluations (IE) with flexible strategy implementations. It provides a foundation for retroactive funding and other impact evaluation mechanisms through a pluggable strategy architecture.
