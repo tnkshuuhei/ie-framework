@@ -6,17 +6,9 @@ import { IStrategy } from "../interfaces/IStrategy.sol";
 
 abstract contract BaseIEStrategy is IStrategy {
     IScaffoldIE public scaffoldIE;
-
+    uint256 public poolId;
     string public name;
-
     address[] public recipients;
-
-    mapping(uint256 => bool) private initialized;
-
-    error NotImplemented();
-
-    error AlreadyInitialized();
-    error OnlyScaffoldIE();
 
     modifier onlyScaffoldIE() {
         require(msg.sender == address(scaffoldIE), OnlyScaffoldIE());
@@ -26,6 +18,10 @@ abstract contract BaseIEStrategy is IStrategy {
     constructor(address _scaffoldIE, string memory _name) {
         scaffoldIE = IScaffoldIE(_scaffoldIE);
         name = _name;
+    }
+
+    function getPoolId() external view returns (uint256) {
+        return poolId;
     }
 
     function createIE(bytes memory _data) external virtual { }
@@ -53,14 +49,12 @@ abstract contract BaseIEStrategy is IStrategy {
 
     function _afterEvaluation(bytes memory _data) internal virtual { }
 
-    function initialize(uint256 _poolId, bytes memory _data) external virtual {
+    function initialize(uint256 _poolId, bytes memory _data) external {
         __BaseStrategyInit(_poolId, _data);
     }
 
     function __BaseStrategyInit(uint256 _poolId, bytes memory _data) internal {
-        if (initialized[_poolId]) {
-            revert AlreadyInitialized();
-        }
-        initialized[_poolId] = true;
+        // TODO: check if the poolId is already initialized
+        poolId = _poolId;
     }
 }

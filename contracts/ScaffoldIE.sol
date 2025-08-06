@@ -16,8 +16,6 @@ contract ScaffoldIE is IScaffoldIE, AccessControl, Pausable {
     uint256 public poolCount;
     address public rootSplit;
 
-    error InvalidCaller(address _caller);
-
     // poolId => strategy
     mapping(uint256 => address) public poolIdToStrategy;
 
@@ -55,10 +53,9 @@ contract ScaffoldIE is IScaffoldIE, AccessControl, Pausable {
     }
 
     function createIE(bytes memory _data, address strategy) external {
-        poolCount++;
-        poolIdToStrategy[poolCount] = strategy;
-
         _createIE(_data, strategy);
+        poolIdToStrategy[poolCount] = strategy;
+        poolCount++;
 
         emit PoolCreated(poolCount, strategy);
     }
@@ -70,16 +67,19 @@ contract ScaffoldIE is IScaffoldIE, AccessControl, Pausable {
 
     function registerRecipients(uint256 _poolId, address[] memory _recipients, address _caller) external {
         require(msg.sender == _caller, InvalidCaller(_caller));
+        require(poolIdToStrategy[_poolId] != address(0), PoolNotFound(_poolId));
         IStrategy(poolIdToStrategy[_poolId]).registerRecipients(_recipients, _caller);
     }
 
     function updateRecipients(uint256 _poolId, address[] memory _recipients, address _caller) external {
         require(msg.sender == _caller, InvalidCaller(_caller));
+        require(poolIdToStrategy[_poolId] != address(0), PoolNotFound(_poolId));
         IStrategy(poolIdToStrategy[_poolId]).updateRecipients(_recipients, _caller);
     }
 
     function evaluate(uint256 _poolId, bytes memory _data, address _caller) external {
         require(msg.sender == _caller, InvalidCaller(_caller));
+        require(poolIdToStrategy[_poolId] != address(0), PoolNotFound(_poolId));
         IStrategy(poolIdToStrategy[_poolId]).evaluate(_data, _caller);
     }
 
@@ -97,5 +97,21 @@ contract ScaffoldIE is IScaffoldIE, AccessControl, Pausable {
 
     function unpause() public onlyRole(DEFAULT_ADMIN_ROLE) {
         _unpause();
+    }
+
+    function getSplitterRole() external pure returns (bytes32) {
+        return keccak256("SPLITTER_ROLE");
+    }
+
+    function getEvaluatorRole() external pure returns (bytes32) {
+        return keccak256("EVALUATOR_ROLE");
+    }
+
+    function getPoolCount() external view returns (uint256) {
+        return poolCount;
+    }
+
+    function getRootSplit() external view returns (address) {
+        return rootSplit;
     }
 }

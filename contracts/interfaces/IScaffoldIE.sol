@@ -1,15 +1,23 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.29;
 
-interface IScaffoldIE {
-    event PoolCreated(uint256 poolId, address indexed strategy);
+import { IAccessControl } from "@openzeppelin/contracts/access/IAccessControl.sol";
 
+interface IScaffoldIE is IAccessControl {
+    event PoolCreated(uint256 poolId, address indexed strategy);
     event RouteCreated(address indexed route, uint32[] allocations, address _caller);
     event RouteUpdated(address indexed route, uint32[] allocations, address _caller);
+
+    error InvalidCaller(address _caller);
+    error PoolNotFound(uint256 _poolId);
 
     function getSplits() external view returns (address);
 
     function createIERoute(uint32[] memory _initialAllocations, address _caller) external;
+
+    function registerRecipients(uint256 _poolId, address[] memory _recipients, address _caller) external;
+
+    function updateRecipients(uint256 _poolId, address[] memory _recipients, address _caller) external;
 
     function updateRoute(uint32[] memory _allocations, address _caller) external;
 
@@ -18,4 +26,11 @@ interface IScaffoldIE {
     function getStrategy(uint256 _poolId) external view returns (address);
 
     function evaluate(uint256 _poolId, bytes memory _data, address _caller) external;
+    function getPoolCount() external view returns (uint256);
+
+    function getSplitterRole() external pure returns (bytes32);
+
+    function getEvaluatorRole() external pure returns (bytes32);
+
+    function getRootSplit() external view returns (address);
 }
