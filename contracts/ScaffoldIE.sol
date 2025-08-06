@@ -12,6 +12,7 @@ import { IStrategy } from "./interfaces/IStrategy.sol";
 contract ScaffoldIE is IScaffoldIE, AccessControl, Pausable {
     ISplitMain public splits;
 
+    bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
     bytes32 public constant SPLITTER_ROLE = keccak256("SPLITTER_ROLE");
     bytes32 public constant EVALUATOR_ROLE = keccak256("EVALUATOR_ROLE");
     uint256 public poolCount;
@@ -25,6 +26,7 @@ contract ScaffoldIE is IScaffoldIE, AccessControl, Pausable {
 
     constructor(address _admin, address _splits) {
         _grantRole(DEFAULT_ADMIN_ROLE, _admin);
+        _grantRole(PAUSER_ROLE, _admin);
         splits = ISplitMain(_splits);
     }
 
@@ -74,12 +76,18 @@ contract ScaffoldIE is IScaffoldIE, AccessControl, Pausable {
     function registerRecipients(uint256 _poolId, address[] memory _recipients, address _caller) external {
         require(msg.sender == _caller, InvalidCaller());
         require(poolIdToStrategy[_poolId] != address(0), PoolNotFound(_poolId));
+
+        // access control is handled in the strategy
+        // only check if the msg.sender is equal to the caller
         IStrategy(poolIdToStrategy[_poolId]).registerRecipients(_recipients, _caller);
     }
 
     function updateRecipients(uint256 _poolId, address[] memory _recipients, address _caller) external {
         require(msg.sender == _caller, InvalidCaller());
         require(poolIdToStrategy[_poolId] != address(0), PoolNotFound(_poolId));
+
+        // access control is handled in the strategy
+        // only check if the msg.sender is equal to the caller
         IStrategy(poolIdToStrategy[_poolId]).updateRecipients(_recipients, _caller);
     }
 
@@ -97,11 +105,11 @@ contract ScaffoldIE is IScaffoldIE, AccessControl, Pausable {
         return poolIdToStrategy[_poolId];
     }
 
-    function pause() public onlyRole(DEFAULT_ADMIN_ROLE) {
+    function pause() public onlyRole(PAUSER_ROLE) {
         _pause();
     }
 
-    function unpause() public onlyRole(DEFAULT_ADMIN_ROLE) {
+    function unpause() public onlyRole(PAUSER_ROLE) {
         _unpause();
     }
 
@@ -121,24 +129,31 @@ contract ScaffoldIE is IScaffoldIE, AccessControl, Pausable {
         return rootSplit;
     }
 
-    function addEvaluator(uint256 _poolId, address _evaluator, address _caller) external {
+    function addEvaluator(uint256 _poolId, address _evaluator, address _caller) external onlyRole(DEFAULT_ADMIN_ROLE) {
         require(msg.sender == _caller, InvalidCaller());
         require(poolIdToStrategy[_poolId] != address(0), PoolNotFound(_poolId));
         IStrategy(poolIdToStrategy[_poolId]).addEvaluator(_evaluator, _caller);
     }
 
-    function removeEvaluator(uint256 _poolId, address _evaluator, address _caller) external {
+    function removeEvaluator(
+        uint256 _poolId,
+        address _evaluator,
+        address _caller
+    )
+        external
+        onlyRole(DEFAULT_ADMIN_ROLE)
+    {
         require(msg.sender == _caller, InvalidCaller());
         require(poolIdToStrategy[_poolId] != address(0), PoolNotFound(_poolId));
         IStrategy(poolIdToStrategy[_poolId]).removeEvaluator(_evaluator, _caller);
     }
 
-    function addManager(uint256 _poolId, address _manager, address _caller) external {
+    function addManager(uint256 _poolId, address _manager, address _caller) external onlyRole(DEFAULT_ADMIN_ROLE) {
         require(msg.sender == _caller, InvalidCaller());
         IStrategy(poolIdToStrategy[_poolId]).addManager(_manager, _caller);
     }
 
-    function removeManager(uint256 _poolId, address _manager, address _caller) external {
+    function removeManager(uint256 _poolId, address _manager, address _caller) external onlyRole(DEFAULT_ADMIN_ROLE) {
         require(msg.sender == _caller, InvalidCaller());
         IStrategy(poolIdToStrategy[_poolId]).removeManager(_manager, _caller);
     }

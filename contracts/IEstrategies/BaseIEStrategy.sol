@@ -50,11 +50,7 @@ abstract contract BaseIEStrategy is IStrategy {
 
     function _afterEvaluation(bytes memory _data) internal virtual { }
 
-    function initialize(uint256 _poolId, bytes memory _initializeData, address _scaffoldIE) external {
-        scaffoldIE = IScaffoldIE(_scaffoldIE);
-
-        __BaseStrategyInit(_poolId, _initializeData);
-    }
+    function initialize(uint256 _poolId, bytes memory _initializeData, address _scaffoldIE) external virtual { }
 
     function _initialize(bytes memory _initializeData) internal virtual { }
 

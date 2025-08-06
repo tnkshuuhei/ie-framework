@@ -7,6 +7,7 @@ import { ISplitMain } from "../interfaces/ISplitMain.sol";
 import { AccessControl } from "@openzeppelin/contracts/access/AccessControl.sol";
 import { Pausable } from "@openzeppelin/contracts/utils/Pausable.sol";
 import { AttesterResolver } from "../AttesterResolver.sol";
+import { IScaffoldIE } from "../interfaces/IScaffoldIE.sol";
 
 contract RetroFunding is BaseIEStrategy, AccessControl, Pausable {
     // State variables
@@ -27,6 +28,15 @@ contract RetroFunding is BaseIEStrategy, AccessControl, Pausable {
     // Errors
     error InvalidEvaluator(address _caller);
     error InvalidManager(address _caller);
+
+    function initialize(uint256 _poolId, bytes memory _initializeData, address _scaffoldIE) external override {
+        // Check that the caller is the ScaffoldIE contract
+        require(msg.sender == _scaffoldIE, OnlyScaffoldIE(msg.sender));
+
+        scaffoldIE = IScaffoldIE(_scaffoldIE);
+
+        __BaseStrategyInit(_poolId, _initializeData);
+    }
 
     function _initialize(bytes memory _initializeData) internal override {
         name = "RetroFundingStrategy";
