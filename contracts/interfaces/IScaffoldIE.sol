@@ -8,7 +8,7 @@ interface IScaffoldIE is IAccessControl {
     event RouteCreated(address indexed route, uint32[] allocations, address _caller);
     event RouteUpdated(address indexed route, uint32[] allocations, address _caller);
 
-    error InvalidCaller(address _caller);
+    error InvalidCaller();
     error PoolNotFound(uint256 _poolId);
 
     function getSplits() external view returns (address);

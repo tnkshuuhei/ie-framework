@@ -4,7 +4,7 @@ pragma solidity ^0.8.29;
 interface IStrategy {
     error NotImplemented();
     error AlreadyInitialized();
-    error OnlyScaffoldIE();
+    error OnlyScaffoldIE(address _caller);
 
     function createIE(bytes memory _data) external;
     function evaluate(bytes memory _data, address _caller) external;

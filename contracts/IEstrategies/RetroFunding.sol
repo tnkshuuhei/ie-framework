@@ -59,6 +59,10 @@ contract RetroFunding is BaseIEStrategy, AccessControl, Pausable {
         return splitsContract;
     }
 
+    function initialize(uint256 _poolId, bytes memory _data) external override onlyScaffoldIE {
+        _beforeCreateIE(_data);
+    }
+
     function createIE(bytes memory _data) external override onlyScaffoldIE {
         _beforeCreateIE(_data);
         _createIE(_data);
