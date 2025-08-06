@@ -28,6 +28,7 @@ contract ScaffoldIE is IScaffoldIE, AccessControl, Pausable {
         address[] memory IEs = new address[](poolCount);
 
         for (uint256 i = 0; i < poolCount; i++) {
+            require(poolIdToStrategy[i] != address(0), InvalidStrategy(i));
             IEs[i] = IStrategy(poolIdToStrategy[i]).getAddress();
         }
 
@@ -40,6 +41,7 @@ contract ScaffoldIE is IScaffoldIE, AccessControl, Pausable {
         address[] memory IEs = new address[](poolCount);
 
         for (uint256 i = 0; i < poolCount; i++) {
+            require(poolIdToStrategy[i] != address(0), InvalidStrategy(i));
             IEs[i] = IStrategy(poolIdToStrategy[i]).getAddress();
         }
 
