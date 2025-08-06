@@ -16,46 +16,68 @@ abstract contract BaseIEStrategy is IStrategy {
         _;
     }
 
-    constructor(address _scaffoldIE, string memory _name) {
-        scaffoldIE = IScaffoldIE(_scaffoldIE);
-        name = _name;
+    modifier onlyInitialized() {
+        require(initialized, NotInitialized());
+        _;
     }
 
+    /// @return The pool ID
     function getPoolId() external view returns (uint256) {
         return poolId;
     }
 
+    /// @param _data The data for creating the IE
     function createIE(bytes memory _data) external virtual { }
 
+    /// @param _data The data for creating the IE
     function _beforeCreateIE(bytes memory _data) internal virtual { }
 
+    /// @param _data The data for creating the IE
     function _afterCreateIE(bytes memory _data) internal virtual { }
 
+    /// @param _data The data for creating the IE
     function _createIE(bytes memory _data) internal virtual { }
 
     /// @param _data The data for the evaluation
+    /// @param _caller The caller address
     function evaluate(bytes memory _data, address _caller) external virtual { }
 
+    /// @param _recipients The recipients addresses
+    /// @param _caller The caller address
     function registerRecipients(address[] memory _recipients, address _caller) external virtual { }
 
+    /// @param _recipients The recipients addresses
+    /// @param _caller The caller address
     function updateRecipients(address[] memory _recipients, address _caller) external virtual { }
 
+    /// @param _recipients The recipients addresses
     function _registerRecipients(address[] memory _recipients) internal virtual { }
 
+    /// @return The recipients addresses
     function getRecipients() external view virtual returns (address[] memory) { }
 
+    /// @param _data The evaluation data
     function _evaluate(bytes memory _data) internal virtual { }
 
+    /// @param _data The evaluation data
     function _beforeEvaluation(bytes memory _data) internal virtual { }
 
+    /// @param _data The evaluation data
     function _afterEvaluation(bytes memory _data) internal virtual { }
 
-    function initialize(uint256 _poolId, bytes memory _data) external virtual {
-        __BaseStrategyInit(_poolId, _data);
-    }
+    /// @param _poolId The pool ID
+    /// @param _initializeData The initialization data
+    /// @param _scaffoldIE The scaffold IE address
+    function initialize(uint256 _poolId, bytes memory _initializeData, address _scaffoldIE) external virtual { }
 
-    function __BaseStrategyInit(uint256 _poolId, bytes memory _data) internal virtual {
+    /// @param _initializeData The initialization data
+    function _initialize(bytes memory _initializeData) internal virtual { }
+
+    /// @param _poolId The pool ID
+    /// @param _initializeData The initialization data
+    function __BaseStrategyInit(uint256 _poolId, bytes memory _initializeData) internal {
         require(!initialized, AlreadyInitialized());
+        _initialize(_initializeData);
         poolId = _poolId;
         _setInitialized();
     }

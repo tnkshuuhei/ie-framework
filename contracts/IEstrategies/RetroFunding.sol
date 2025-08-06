@@ -7,6 +7,8 @@ import { ISplitMain } from "../interfaces/ISplitMain.sol";
 import { AccessControl } from "@openzeppelin/contracts/access/AccessControl.sol";
 import { Pausable } from "@openzeppelin/contracts/utils/Pausable.sol";
 import { AttesterResolver } from "../AttesterResolver.sol";
+import { IScaffoldIE } from "../interfaces/IScaffoldIE.sol";
+import { IStrategy } from "../interfaces/IStrategy.sol";
 
 contract RetroFunding is BaseIEStrategy, AccessControl, Pausable {
     // State variables
@@ -28,16 +30,23 @@ contract RetroFunding is BaseIEStrategy, AccessControl, Pausable {
     error InvalidEvaluator(address _caller);
     error InvalidManager(address _caller);
 
-    // Constructor
-    constructor(
-        address _admin,
-        address _scaffoldIE,
-        address _eas,
-        bytes32 _schemaUID
-    )
-        BaseIEStrategy(_scaffoldIE, "RetroFundingStrategy")
-    {
-        // TODO: consider using hypercerts v2 attestations for eval, measurement
+    /// @param _poolId The pool ID
+    /// @param _initializeData The initialization data
+    /// @param _scaffoldIE The scaffold IE address
+    function initialize(uint256 _poolId, bytes memory _initializeData, address _scaffoldIE) external override {
+        // Check that the caller is the ScaffoldIE contract
+        require(msg.sender == _scaffoldIE, OnlyScaffoldIE(msg.sender));
+
+        scaffoldIE = IScaffoldIE(_scaffoldIE);
+
+        __BaseStrategyInit(_poolId, _initializeData);
+    }
+
+    /// @param _initializeData The initialization data
+    function _initialize(bytes memory _initializeData) internal override {
+        name = "RetroFundingStrategy";
+
+        (address _eas, bytes32 _schemaUID, address _admin) = abi.decode(_initializeData, (address, bytes32, address));
         eas = IEAS(_eas);
         schemaUID = _schemaUID;
 
@@ -46,23 +55,35 @@ contract RetroFunding is BaseIEStrategy, AccessControl, Pausable {
     }
 
     // Public/External functions
+
+    /// @return The splits contract address
     function getAddress() external view returns (address) {
         return splitsContract;
     }
 
-    function initialize(uint256 _poolId, bytes memory _data) external override onlyScaffoldIE {
-        __BaseStrategyInit(_poolId, _data);
-    }
-
-    function createIE(bytes memory _data) external override onlyScaffoldIE {
+    /// @param _data The data for creating the IE
+    function createIE(bytes memory _data) external override onlyScaffoldIE onlyInitialized {
         _createIE(_data);
     }
 
-    function evaluate(bytes memory _data, address _caller) external override onlyEvaluator(_caller) onlyScaffoldIE {
+    /// @param _data The evaluation data
+    /// @param _caller The caller address
+    function evaluate(
+        bytes memory _data,
+        address _caller
+    )
+        external
+        override
+        onlyEvaluator(_caller)
+        onlyScaffoldIE
+        onlyInitialized
+    {
         _beforeEvaluation(_data);
         _evaluate(_data);
     }
 
+    /// @param _recipients The recipients addresses
+    /// @param _caller The caller address
     function registerRecipients(
         address[] memory _recipients,
         address _caller
@@ -71,14 +92,18 @@ contract RetroFunding is BaseIEStrategy, AccessControl, Pausable {
         override
         onlyManager(_caller)
         onlyScaffoldIE
+        onlyInitialized
     {
         _registerRecipients(_recipients);
     }
 
+    /// @param _recipients The recipients addresses
     function _registerRecipients(address[] memory _recipients) internal override {
         recipients = _recipients;
     }
 
+    /// @param _recipients The recipients addresses
+    /// @param _caller The caller address
     function updateRecipients(
         address[] memory _recipients,
         address _caller
@@ -87,10 +112,12 @@ contract RetroFunding is BaseIEStrategy, AccessControl, Pausable {
         override
         onlyManager(_caller)
         onlyScaffoldIE
+        onlyInitialized
     {
         _updateRecipients(_recipients);
     }
 
+    /// @param _recipients The recipients addresses
     function _updateRecipients(address[] memory _recipients) internal {
         recipients = _recipients;
     }
@@ -132,8 +159,6 @@ contract RetroFunding is BaseIEStrategy, AccessControl, Pausable {
 
         ISplitMain(scaffoldIE.getSplits()).updateSplit(splitsContract, _recipients, _allocations, 0);
         emit Evaluated(_recipients, _allocations);
-
-        // TODO: return attestation data
     }
 
     function _beforeCreateIE(bytes memory _data) internal override {
@@ -148,19 +173,19 @@ contract RetroFunding is BaseIEStrategy, AccessControl, Pausable {
         return recipients;
     }
 
-    function addEvaluator(address _evaluator, address _caller) external onlyAdmin(_caller) {
+    function addEvaluator(address _evaluator, address _caller) external onlyAdmin(_caller) onlyInitialized {
         _grantRole(EVALUATOR_ROLE, _evaluator);
     }
 
-    function removeEvaluator(address _evaluator, address _caller) external onlyAdmin(_caller) {
+    function removeEvaluator(address _evaluator, address _caller) external onlyAdmin(_caller) onlyInitialized {
         _revokeRole(EVALUATOR_ROLE, _evaluator);
     }
 
-    function addManager(address _manager, address _caller) external onlyAdmin(_caller) {
+    function addManager(address _manager, address _caller) external onlyAdmin(_caller) onlyInitialized {
         _grantRole(MANAGER_ROLE, _manager);
     }
 
-    function removeManager(address _manager, address _caller) external onlyAdmin(_caller) {
+    function removeManager(address _manager, address _caller) external onlyAdmin(_caller) onlyInitialized {
         _revokeRole(MANAGER_ROLE, _manager);
     }
 

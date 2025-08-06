@@ -12,26 +12,52 @@ interface IScaffoldIE is IAccessControl {
     error PoolNotFound(uint256 _poolId);
     error InvalidStrategy();
 
+    /// @return The splits contract address
     function getSplits() external view returns (address);
 
+    /// @param _initialAllocations The initial allocations for the route
     function createIERoute(uint32[] memory _initialAllocations) external;
 
+    /// @param _poolId The pool ID
+    /// @param _recipients The recipients addresses
+    /// @param _caller The caller address
     function registerRecipients(uint256 _poolId, address[] memory _recipients, address _caller) external;
 
+    /// @param _poolId The pool ID
+    /// @param _recipients The recipients addresses
+    /// @param _caller The caller address
     function updateRecipients(uint256 _poolId, address[] memory _recipients, address _caller) external;
 
+    /// @param _allocations The new allocations for the route
     function updateRoute(uint32[] memory _allocations) external;
 
-    function createIE(bytes memory _data, address strategy) external;
+    /// @param _data The data for creating the IE
+    /// @param _initializeData The initialization data
+    /// @param strategy The strategy address
+    function createIE(bytes memory _data, bytes memory _initializeData, address strategy) external;
 
+    /// @param _poolId The pool ID
+    /// @return The strategy address
     function getStrategy(uint256 _poolId) external view returns (address);
 
+    /// @param _poolId The pool ID
+    /// @param _data The evaluation data
+    /// @param _caller The caller address
     function evaluate(uint256 _poolId, bytes memory _data, address _caller) external;
+
+    /// @return The pool count
     function getPoolCount() external view returns (uint256);
 
+    /// @return The splitter role
     function getSplitterRole() external pure returns (bytes32);
 
+    /// @return The evaluator role
     function getEvaluatorRole() external pure returns (bytes32);
 
+    /// @return The root split address
     function getRootSplit() external view returns (address);
+
+    /// @param _strategy The strategy address
+    /// @param _cloneable Whether the strategy is cloneable
+    function setCloneableStrategy(address _strategy, bool _cloneable) external;
 }
