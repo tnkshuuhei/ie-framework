@@ -37,29 +37,39 @@ contract ScaffoldIE is IScaffoldIE, AccessControl, Pausable {
     /// @param _initialAllocations The initial allocations for the route
     function createIERoute(uint32[] memory _initialAllocations) external onlyRole(SPLITTER_ROLE) {
         address[] memory IEs = new address[](poolCount);
+        uint32[] memory allocations = new uint32[](poolCount);
 
         for (uint256 i = 0; i < poolCount; i++) {
             require(poolIdToStrategy[i] != address(0), InvalidStrategy());
             IEs[i] = IStrategy(poolIdToStrategy[i]).getAddress();
+            allocations[i] = _initialAllocations[i];
         }
 
-        rootSplit = splits.createSplit(IEs, _initialAllocations, 0, address(this));
+        // Sort IEs and allocations together in ascending order (required by SplitMain)
+        _sortAddressesAndAllocations(IEs, allocations);
 
-        emit RouteCreated(rootSplit, _initialAllocations, msg.sender);
+        rootSplit = splits.createSplit(IEs, allocations, 0, address(this));
+
+        emit RouteCreated(rootSplit, allocations, msg.sender);
     }
 
     /// @param _allocations The new allocations for the route
     function updateRoute(uint32[] memory _allocations) external onlyRole(SPLITTER_ROLE) {
         address[] memory IEs = new address[](poolCount);
+        uint32[] memory allocations = new uint32[](poolCount);
 
         for (uint256 i = 0; i < poolCount; i++) {
             require(poolIdToStrategy[i] != address(0), InvalidStrategy());
             IEs[i] = IStrategy(poolIdToStrategy[i]).getAddress();
+            allocations[i] = _allocations[i];
         }
 
-        splits.updateSplit(rootSplit, IEs, _allocations, 0);
+        // Sort IEs and allocations together in ascending order (required by SplitMain)
+        _sortAddressesAndAllocations(IEs, allocations);
 
-        emit RouteUpdated(rootSplit, _allocations, msg.sender);
+        splits.updateSplit(rootSplit, IEs, allocations, 0);
+
+        emit RouteUpdated(rootSplit, allocations, msg.sender);
     }
 
     /// @param _data The data for creating the IE
@@ -214,5 +224,24 @@ contract ScaffoldIE is IScaffoldIE, AccessControl, Pausable {
     /// @return Whether the strategy is cloneable
     function _isCloneableStrategy(address _strategy) internal view returns (bool) {
         return cloneableStrategy[_strategy];
+    }
+
+    /// @param _addresses The addresses to sort
+    /// @param _allocations The allocations to sort
+    function _sortAddressesAndAllocations(address[] memory _addresses, uint32[] memory _allocations) internal pure {
+        uint256 length = _addresses.length;
+        for (uint256 i = 0; i < length - 1; i++) {
+            for (uint256 j = 0; j < length - i - 1; j++) {
+                if (_addresses[j] > _addresses[j + 1]) {
+                    address tempAddress = _addresses[j];
+                    _addresses[j] = _addresses[j + 1];
+                    _addresses[j + 1] = tempAddress;
+
+                    uint32 tempAllocation = _allocations[j];
+                    _allocations[j] = _allocations[j + 1];
+                    _allocations[j + 1] = tempAllocation;
+                }
+            }
+        }
     }
 }
