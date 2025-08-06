@@ -8,6 +8,7 @@ import { AccessControl } from "@openzeppelin/contracts/access/AccessControl.sol"
 import { Pausable } from "@openzeppelin/contracts/utils/Pausable.sol";
 import { AttesterResolver } from "../AttesterResolver.sol";
 import { IScaffoldIE } from "../interfaces/IScaffoldIE.sol";
+import { IStrategy } from "../interfaces/IStrategy.sol";
 
 contract RetroFunding is BaseIEStrategy, AccessControl, Pausable {
     // State variables

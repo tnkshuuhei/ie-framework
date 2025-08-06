@@ -34,4 +34,6 @@ interface IScaffoldIE is IAccessControl {
     function getEvaluatorRole() external pure returns (bytes32);
 
     function getRootSplit() external view returns (address);
+
+    function setCloneableStrategy(address _strategy, bool _cloneable) external;
 }
