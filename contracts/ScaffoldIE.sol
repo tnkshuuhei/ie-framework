@@ -27,6 +27,8 @@ contract ScaffoldIE is IScaffoldIE, AccessControl, Pausable {
     constructor(address _admin, address _splits) {
         _grantRole(DEFAULT_ADMIN_ROLE, _admin);
         _grantRole(PAUSER_ROLE, _admin);
+        _grantRole(SPLITTER_ROLE, _admin);
+        _grantRole(EVALUATOR_ROLE, _admin);
         splits = ISplitMain(_splits);
     }
 

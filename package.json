@@ -28,6 +28,7 @@
     "build": "forge clean && forge build",
     "test": "forge clean && forge test ",
     "coverage": "forge clean && forge coverage",
-    "test:sepolia": "forge clean && forge test --rpc-url https://sepolia.drpc.org"
+    "test:sepolia": "forge clean && forge test --rpc-url https://sepolia.drpc.org",
+    "deploy:sepolia": "forge clean && forge script script/Deploy.s.sol:Deploy --rpc-url https://sepolia.drpc.org --broadcast --etherscan-api-key sepolia --verify"
   }
 }
