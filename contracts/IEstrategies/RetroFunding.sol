@@ -28,23 +28,6 @@ contract RetroFunding is BaseIEStrategy, AccessControl, Pausable {
     error InvalidEvaluator(address _caller);
     error InvalidManager(address _caller);
 
-    // Constructor
-    // constructor(
-    //     address _admin,
-    //     address _scaffoldIE,
-    //     address _eas,
-    //     bytes32 _schemaUID
-    // )
-    //     BaseIEStrategy(_scaffoldIE, "RetroFundingStrategy")
-    // {
-    //     // TODO: consider using hypercerts v2 attestations for eval, measurement
-    //     eas = IEAS(_eas);
-    //     schemaUID = _schemaUID;
-
-    //     _grantRole(DEFAULT_ADMIN_ROLE, _admin);
-    //     _grantRole(PAUSER_ROLE, _admin);
-    // }
-
     function _initialize(bytes memory _initializeData) internal override {
         name = "RetroFundingStrategy";
 
@@ -150,8 +133,6 @@ contract RetroFunding is BaseIEStrategy, AccessControl, Pausable {
 
         ISplitMain(scaffoldIE.getSplits()).updateSplit(splitsContract, _recipients, _allocations, 0);
         emit Evaluated(_recipients, _allocations);
-
-        // TODO: return attestation data
     }
 
     function _beforeCreateIE(bytes memory _data) internal override {
