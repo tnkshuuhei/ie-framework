@@ -18,7 +18,9 @@ contract Deploy is BaseScript {
     ISchemaRegistry public schemaRegistry;
     ScaffoldIE public scaffoldIE;
     RetroFundingManual public retroFunding = RetroFundingManual(0xaa6BCFD380Ce83940BCBA34B507CC80514CC7d99);
-    ProtocolGuild public protocolGuild = ProtocolGuild(0x7Af45f6f1a2cD23ce75B91947711Bf5F8742cCa2);
+    // ProtocolGuild public protocolGuild = ProtocolGuild(0x7Af45f6f1a2cD23ce75B91947711Bf5F8742cCa2);
+    // RetroFundingManual public retroFunding;
+    ProtocolGuild public protocolGuild;
 
     bytes32 public schemaUID;
 
@@ -43,9 +45,9 @@ contract Deploy is BaseScript {
         // console2.log("RetroFunding deployed");
         // console2.log("RetroFunding address: %s", address(retroFunding));
 
-        // protocolGuild = new ProtocolGuild();
-        // console2.log("ProtocolGuild deployed");
-        // console2.log("ProtocolGuild address: %s", address(protocolGuild));
+        protocolGuild = new ProtocolGuild();
+        console2.log("ProtocolGuild deployed");
+        console2.log("ProtocolGuild address: %s", address(protocolGuild));
 
         console2.log("Setting cloneable strategy");
         scaffoldIE.setCloneableStrategy(address(retroFunding), true);
