@@ -96,27 +96,27 @@ contract ScaffoldIE is IScaffoldIE, AccessControl, Pausable {
     }
 
     /// @param _poolId The pool ID
-    /// @param _recipients The recipients addresses
+    /// @param _data The data for registering the recipients
     /// @param _caller The caller address
-    function registerRecipients(uint256 _poolId, address[] memory _recipients, address _caller) external {
+    function registerRecipients(uint256 _poolId, bytes memory _data, address _caller) external {
         require(msg.sender == _caller, InvalidCaller());
         require(poolIdToStrategy[_poolId] != address(0), PoolNotFound(_poolId));
 
         // access control is handled in the strategy
         // only check if the msg.sender is equal to the caller
-        IStrategy(poolIdToStrategy[_poolId]).registerRecipients(_recipients, _caller);
+        IStrategy(poolIdToStrategy[_poolId]).registerRecipients(_data, _caller);
     }
 
     /// @param _poolId The pool ID
-    /// @param _recipients The recipients addresses
+    /// @param _data The data for updating the recipients
     /// @param _caller The caller address
-    function updateRecipients(uint256 _poolId, address[] memory _recipients, address _caller) external {
+    function updateRecipients(uint256 _poolId, bytes memory _data, address _caller) external {
         require(msg.sender == _caller, InvalidCaller());
         require(poolIdToStrategy[_poolId] != address(0), PoolNotFound(_poolId));
 
         // access control is handled in the strategy
         // only check if the msg.sender is equal to the caller
-        IStrategy(poolIdToStrategy[_poolId]).updateRecipients(_recipients, _caller);
+        IStrategy(poolIdToStrategy[_poolId]).updateRecipients(_data, _caller);
     }
 
     /// @param _poolId The pool ID

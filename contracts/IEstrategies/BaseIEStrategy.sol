@@ -8,7 +8,7 @@ abstract contract BaseIEStrategy is IStrategy {
     IScaffoldIE public scaffoldIE;
     uint256 public poolId;
     string public name;
-    address[] public recipients;
+    bytes public recipientsData;
     bool public initialized;
 
     modifier onlyScaffoldIE() {
@@ -42,19 +42,19 @@ abstract contract BaseIEStrategy is IStrategy {
     /// @param _caller The caller address
     function evaluate(bytes memory _data, address _caller) external virtual { }
 
-    /// @param _recipients The recipients addresses
+    /// @param _data The data for registering the recipients
     /// @param _caller The caller address
-    function registerRecipients(address[] memory _recipients, address _caller) external virtual { }
+    function registerRecipients(bytes memory _data, address _caller) external virtual { }
 
-    /// @param _recipients The recipients addresses
+    /// @param _data The data for updating the recipients
     /// @param _caller The caller address
-    function updateRecipients(address[] memory _recipients, address _caller) external virtual { }
+    function updateRecipients(bytes memory _data, address _caller) external virtual { }
 
-    /// @param _recipients The recipients addresses
-    function _registerRecipients(address[] memory _recipients) internal virtual { }
+    /// @param _data The data for registering the recipients
+    function _registerRecipients(bytes memory _data) internal virtual { }
 
-    /// @return The recipients addresses
-    function getRecipients() external view virtual returns (address[] memory) { }
+    /// @param _data The data for updating the recipients
+    function _updateRecipients(bytes memory _data) internal virtual { }
 
     /// @param _data The evaluation data
     function _evaluate(bytes memory _data) internal virtual { }

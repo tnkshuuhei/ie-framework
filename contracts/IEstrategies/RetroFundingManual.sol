@@ -6,9 +6,7 @@ import { BaseIEStrategy } from "./BaseIEStrategy.sol";
 import { ISplitMain } from "../interfaces/ISplitMain.sol";
 import { AccessControl } from "@openzeppelin/contracts/access/AccessControl.sol";
 import { Pausable } from "@openzeppelin/contracts/utils/Pausable.sol";
-import { AttesterResolver } from "../AttesterResolver.sol";
 import { IScaffoldIE } from "../interfaces/IScaffoldIE.sol";
-import { IStrategy } from "../interfaces/IStrategy.sol";
 
 contract RetroFundingManual is BaseIEStrategy, AccessControl, Pausable {
     // State variables
@@ -21,6 +19,9 @@ contract RetroFundingManual is BaseIEStrategy, AccessControl, Pausable {
     address public splitsContract;
 
     IEAS public eas;
+
+    error EmptyRecipientsArray();
+    error InitialAllocationsLengthMismatch();
 
     // Events
     event AttestationCreated(bytes32 attestationUID);
@@ -82,10 +83,10 @@ contract RetroFundingManual is BaseIEStrategy, AccessControl, Pausable {
         _evaluate(_data);
     }
 
-    /// @param _recipients The recipients addresses
+    /// @param _data The data for registering the recipients
     /// @param _caller The caller address
     function registerRecipients(
-        address[] memory _recipients,
+        bytes memory _data,
         address _caller
     )
         external
@@ -94,18 +95,20 @@ contract RetroFundingManual is BaseIEStrategy, AccessControl, Pausable {
         onlyScaffoldIE
         onlyInitialized
     {
-        _registerRecipients(_recipients);
+        _registerRecipients(_data);
     }
 
-    /// @param _recipients The recipients addresses
-    function _registerRecipients(address[] memory _recipients) internal override {
-        recipients = _recipients;
+    /// @param _data The data for registering the recipients
+    function _registerRecipients(bytes memory _data) internal override {
+        (address[] memory _recipients) = abi.decode(_data, (address[]));
+        require(_recipients.length > 0, EmptyRecipientsArray());
+        recipientsData = abi.encode(_recipients);
     }
 
-    /// @param _recipients The recipients addresses
+    /// @param _data The data for updating the recipients
     /// @param _caller The caller address
     function updateRecipients(
-        address[] memory _recipients,
+        bytes memory _data,
         address _caller
     )
         external
@@ -114,12 +117,14 @@ contract RetroFundingManual is BaseIEStrategy, AccessControl, Pausable {
         onlyScaffoldIE
         onlyInitialized
     {
-        _updateRecipients(_recipients);
+        _updateRecipients(_data);
     }
 
-    /// @param _recipients The recipients addresses
-    function _updateRecipients(address[] memory _recipients) internal {
-        recipients = _recipients;
+    /// @param _data The data for updating the recipients
+    function _updateRecipients(bytes memory _data) internal override {
+        (address[] memory _recipients) = abi.decode(_data, (address[]));
+        require(_recipients.length > 0, EmptyRecipientsArray());
+        recipientsData = abi.encode(_recipients);
     }
 
     // Internal functions
@@ -131,7 +136,11 @@ contract RetroFundingManual is BaseIEStrategy, AccessControl, Pausable {
     /// @dev uint32[]: initial allocations
     function _createIE(bytes memory _data) internal override {
         (address[] memory _recipients, uint32[] memory _initialAllocations) = abi.decode(_data, (address[], uint32[]));
-        recipients = _recipients;
+
+        require(_recipients.length > 0, EmptyRecipientsArray());
+        require(_initialAllocations.length == _recipients.length, InitialAllocationsLengthMismatch());
+
+        recipientsData = abi.encode(_recipients, _initialAllocations);
 
         splitsContract =
             ISplitMain(scaffoldIE.getSplits()).createSplit(_recipients, _initialAllocations, 0, address(this));
@@ -169,8 +178,8 @@ contract RetroFundingManual is BaseIEStrategy, AccessControl, Pausable {
         revert NotImplemented();
     }
 
-    function getRecipients() external view override returns (address[] memory) {
-        return recipients;
+    function getRecipients() external view returns (bytes memory) {
+        return recipientsData;
     }
 
     function addEvaluator(address _evaluator, address _caller) external onlyAdmin(_caller) onlyInitialized {

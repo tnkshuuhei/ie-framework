@@ -19,20 +19,20 @@ interface IStrategy {
     /// @param _scaffoldIE The scaffold IE address
     function initialize(uint256 _poolId, bytes memory _initializeData, address _scaffoldIE) external;
 
-    /// @param _recipients The recipients addresses
+    /// @param _data The data for registering the recipients
     /// @param _caller The caller address
-    function registerRecipients(address[] memory _recipients, address _caller) external;
+    function registerRecipients(bytes memory _data, address _caller) external;
 
-    /// @param _recipients The recipients addresses
+    /// @param _data The data for updating the recipients
     /// @param _caller The caller address
-    function updateRecipients(address[] memory _recipients, address _caller) external;
-
-    /// @return The recipients addresses
-    function getRecipients() external view returns (address[] memory);
+    function updateRecipients(bytes memory _data, address _caller) external;
 
     /// @param _evaluator The evaluator address
     /// @param _caller The caller address
     function addEvaluator(address _evaluator, address _caller) external;
+
+    /// @return The recipients data
+    function getRecipients() external view returns (bytes memory);
 
     /// @param _evaluator The evaluator address
     /// @param _caller The caller address
@@ -46,6 +46,6 @@ interface IStrategy {
     /// @param _caller The caller address
     function removeManager(address _manager, address _caller) external;
 
-    /// @return The strategy address
+    /// @return The strategy address or splits contract address
     function getAddress() external view returns (address);
 }

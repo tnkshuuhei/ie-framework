@@ -19,14 +19,14 @@ interface IScaffoldIE is IAccessControl {
     function createIERoute(uint32[] memory _initialAllocations) external;
 
     /// @param _poolId The pool ID
-    /// @param _recipients The recipients addresses
+    /// @param _data The data for registering the recipients
     /// @param _caller The caller address
-    function registerRecipients(uint256 _poolId, address[] memory _recipients, address _caller) external;
+    function registerRecipients(uint256 _poolId, bytes memory _data, address _caller) external;
 
     /// @param _poolId The pool ID
-    /// @param _recipients The recipients addresses
+    /// @param _data The data for updating the recipients
     /// @param _caller The caller address
-    function updateRecipients(uint256 _poolId, address[] memory _recipients, address _caller) external;
+    function updateRecipients(uint256 _poolId, bytes memory _data, address _caller) external;
 
     /// @param _allocations The new allocations for the route
     function updateRoute(uint32[] memory _allocations) external;

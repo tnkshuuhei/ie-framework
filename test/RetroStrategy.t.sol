@@ -43,6 +43,8 @@ contract RetroStrategyTest is Test {
 
     function testDeployments() public view {
         assertNotEq(address(scaffoldIE), address(0));
+        assertEq(scaffoldIE.getSplits(), address(splits));
+
         assertNotEq(address(retroFunding), address(0));
     }
 
@@ -133,15 +135,16 @@ contract RetroStrategyTest is Test {
         scaffoldIE.addManager(0, manager, admin);
         vm.stopPrank();
         vm.startPrank(manager);
-        scaffoldIE.registerRecipients(0, recipients, manager);
+        scaffoldIE.registerRecipients(0, abi.encode(recipients), manager);
         vm.stopPrank();
 
         // Check RetroFunding state
         address strategyAddress = scaffoldIE.getStrategy(0);
-        address[] memory storedRecipients = IStrategy(strategyAddress).getRecipients();
-        assertEq(storedRecipients.length, 2);
-        assertEq(storedRecipients[0], recipient1);
-        assertEq(storedRecipients[1], recipient2);
+        bytes memory storedRecipients = IStrategy(strategyAddress).getRecipients();
+        (address[] memory _recipients) = abi.decode(storedRecipients, (address[]));
+        assertEq(_recipients.length, 2);
+        assertEq(_recipients[0], recipient1);
+        assertEq(_recipients[1], recipient2);
     }
 
     function testUpdateRecipients() public {
@@ -159,16 +162,17 @@ contract RetroStrategyTest is Test {
 
         // Execute test
         vm.startPrank(manager);
-        scaffoldIE.updateRecipients(0, newRecipients, manager);
+        scaffoldIE.updateRecipients(0, abi.encode(newRecipients), manager);
         vm.stopPrank();
 
         // Check RetroFunding state
         address strategyAddress = scaffoldIE.getStrategy(0);
-        address[] memory storedRecipients = IStrategy(strategyAddress).getRecipients();
-        assertEq(storedRecipients.length, 3);
-        assertEq(storedRecipients[0], recipient1);
-        assertEq(storedRecipients[1], recipient2);
-        assertEq(storedRecipients[2], recipient3);
+        bytes memory storedRecipients = IStrategy(strategyAddress).getRecipients();
+        (address[] memory recipients) = abi.decode(storedRecipients, (address[]));
+        assertEq(recipients.length, 3);
+        assertEq(recipients[0], recipient1);
+        assertEq(recipients[1], recipient2);
+        assertEq(recipients[2], recipient3);
     }
 
     function testEvaluate() public {
