@@ -37,7 +37,7 @@ contract ProtocolGuildTest is Base {
         ProtocolGuild.WorkType[] memory workTypes = new ProtocolGuild.WorkType[](5);
         workTypes[0] = ProtocolGuild.WorkType.FULL;
         workTypes[1] = ProtocolGuild.WorkType.PARTIAL;
-        workTypes[2] = ProtocolGuild.WorkType.PARTIAL;
+        workTypes[2] = ProtocolGuild.WorkType.FULL;
         workTypes[3] = ProtocolGuild.WorkType.FULL;
         workTypes[4] = ProtocolGuild.WorkType.PARTIAL;
 
@@ -73,7 +73,39 @@ contract ProtocolGuildTest is Base {
         scaffoldIE.addEvaluator(0, evaluator, admin);
         vm.stopPrank();
         // warp 3months
-        vm.warp(block.timestamp + 13 * 30 days);
+        vm.warp(block.timestamp + 10 * 30 days);
+
+        vm.startPrank(evaluator);
+        scaffoldIE.evaluate(0, evaluationData, evaluator);
+        vm.stopPrank();
+
+        address[] memory _recipients = new address[](6);
+        _recipients[0] = recipient1;
+        _recipients[1] = recipient2;
+        _recipients[2] = recipient3;
+        _recipients[3] = recipient4;
+        _recipients[4] = address(5);
+        _recipients[5] = address(6);
+
+        ProtocolGuild.WorkType[] memory workTypes = new ProtocolGuild.WorkType[](6);
+        workTypes[0] = ProtocolGuild.WorkType.FULL;
+        workTypes[1] = ProtocolGuild.WorkType.PARTIAL;
+        workTypes[2] = ProtocolGuild.WorkType.FULL;
+        workTypes[3] = ProtocolGuild.WorkType.FULL;
+        workTypes[4] = ProtocolGuild.WorkType.PARTIAL;
+        workTypes[5] = ProtocolGuild.WorkType.PARTIAL;
+
+        bytes memory data = abi.encode(_recipients, workTypes);
+
+        vm.startPrank(admin);
+        scaffoldIE.addManager(0, manager, admin);
+        vm.stopPrank();
+
+        vm.startPrank(manager);
+        scaffoldIE.updateRecipients(0, data, manager);
+        vm.stopPrank();
+
+        vm.warp(block.timestamp + 20 * 30 days);
 
         vm.startPrank(evaluator);
         scaffoldIE.evaluate(0, evaluationData, evaluator);

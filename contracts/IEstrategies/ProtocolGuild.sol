@@ -142,7 +142,11 @@ contract ProtocolGuild is BaseIEStrategy, AccessControl, Pausable {
         (address[] memory _recipients, WorkType[] memory _workTypes) = abi.decode(_data, (address[], WorkType[]));
         recipientsData = abi.encode(_recipients, _workTypes);
         for (uint256 i = 0; i < _recipients.length; i++) {
-            workType[_recipients[i]] = _workTypes[i];
+            if (startDate[_recipients[i]] == 0) {
+                startDate[_recipients[i]] = block.timestamp;
+                isActive[_recipients[i]] = true;
+                workType[_recipients[i]] = _workTypes[i];
+            }
         }
     }
 
