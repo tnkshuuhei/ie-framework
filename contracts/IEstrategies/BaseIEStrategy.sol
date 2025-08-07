@@ -85,4 +85,23 @@ abstract contract BaseIEStrategy is IStrategy {
     function _setInitialized() internal {
         initialized = true;
     }
+
+    /// @param _addresses The addresses to sort
+    /// @param _allocations The allocations to sort
+    function _sortAddressesAndAllocations(address[] memory _addresses, uint32[] memory _allocations) internal pure {
+        uint256 length = _addresses.length;
+        for (uint256 i = 0; i < length - 1; i++) {
+            for (uint256 j = 0; j < length - i - 1; j++) {
+                if (_addresses[j] > _addresses[j + 1]) {
+                    address tempAddress = _addresses[j];
+                    _addresses[j] = _addresses[j + 1];
+                    _addresses[j + 1] = tempAddress;
+
+                    uint32 tempAllocation = _allocations[j];
+                    _allocations[j] = _allocations[j + 1];
+                    _allocations[j + 1] = tempAllocation;
+                }
+            }
+        }
+    }
 }

@@ -144,6 +144,8 @@ contract RetroFundingManual is BaseIEStrategy, AccessControl, Pausable {
 
         recipientsData = abi.encode(_recipients, _initialAllocations);
 
+        _sortAddressesAndAllocations(_recipients, _initialAllocations);
+
         splitsContract =
             ISplitMain(scaffoldIE.getSplits()).createSplit(_recipients, _initialAllocations, 0, address(this));
     }
@@ -165,11 +167,15 @@ contract RetroFundingManual is BaseIEStrategy, AccessControl, Pausable {
 
     function _evaluate(bytes memory _data) internal override {
         // This should follow the schema
-        (, address[] memory _recipients, uint32[] memory _allocations,,,) =
-            abi.decode(_data, (string, address[], uint32[], address, uint256, address));
+        (, uint32[] memory _allocations,,,) = abi.decode(_data, (string, uint32[], address, uint256, address));
+        address[] memory recipients = abi.decode(recipientsData, (address[]));
 
-        ISplitMain(scaffoldIE.getSplits()).updateSplit(splitsContract, _recipients, _allocations, 0);
-        emit Evaluated(_recipients, _allocations);
+        require(_allocations.length == recipients.length, InitialAllocationsLengthMismatch());
+
+        _sortAddressesAndAllocations(recipients, _allocations);
+
+        ISplitMain(scaffoldIE.getSplits()).updateSplit(splitsContract, recipients, _allocations, 0);
+        emit Evaluated(recipients, _allocations);
     }
 
     function _beforeCreateIE(bytes memory _data) internal override {

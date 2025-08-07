@@ -83,7 +83,7 @@ contract ScaffoldIE is IScaffoldIE, AccessControl, Pausable {
 
         _createIE(_data, _initializeData, clone);
         poolIdToStrategy[poolCount] = clone;
-        emit PoolCreated(poolCount, clone);
+        emit IECreated(poolCount, clone);
         poolCount++;
     }
 

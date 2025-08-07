@@ -180,16 +180,12 @@ contract RetroStrategyTest is Test {
         testCreateIE();
 
         string memory dataset = "data";
-        address[] memory recipients = new address[](2);
-        recipients[0] = recipient1;
-        recipients[1] = recipient2;
 
         uint32[] memory allocations = new uint32[](2);
         allocations[0] = 5e5;
         allocations[1] = 5e5;
 
-        bytes memory evaluationData =
-            abi.encode(dataset, recipients, allocations, address(retroFunding), block.chainid, evaluator);
+        bytes memory evaluationData = abi.encode(dataset, allocations, address(retroFunding), block.chainid, evaluator);
 
         vm.startPrank(admin);
         scaffoldIE.addEvaluator(0, evaluator, admin);
