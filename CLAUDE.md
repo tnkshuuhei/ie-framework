@@ -4,9 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Scaffold-IE is a smart contract system implementing Impact Evaluation (IE) mechanisms for decentralized funding allocation. It uses Protocol Guild-style time-weighted formulas to calculate fair distributions based on contributor activity and commitment over time.
+Scaffold-IE is a smart contract system implementing Impact Evaluation (IE) mechanisms for decentralized funding allocation. It uses Protocol Guild-style time-weighted formulas and EAS attestations to calculate fair distributions based on contributor activity and commitment over time.
 
-**Core Concept**: The system creates funding pools where contributors receive allocations based on their time-weighted contributions, calculated using the formula: `time_weight = sqrt((wearing_time) * full_or_part_time_multiplier)`
+**Core Concept**: The system creates funding pools where contributors receive allocations based on their time-weighted contributions, calculated using formulas like: `time_weight = sqrt((wearing_time) * full_or_part_time_multiplier)`
 
 ## Technology Stack
 
@@ -34,7 +34,7 @@ forge test                        # Run all tests
 forge test -vvv                   # Run with detailed output for debugging
 forge test --match-test TestName  # Run specific test
 forge test --gas-report          # Show gas usage
-forge test --rpc-url https://sepolia.drpc.org  # Test against Sepolia
+pnpm test:sepolia                # Test against Sepolia network
 ```
 
 ### Code Formatting
@@ -43,113 +43,134 @@ forge test --rpc-url https://sepolia.drpc.org  # Test against Sepolia
 forge fmt               # Format Solidity code (always run before committing)
 ```
 
+### Deployment
+
+```bash
+pnpm deploy:sepolia     # Deploy to Sepolia with verification
+```
+
 ## Architecture Overview
 
 ### Strategy Pattern Implementation
 
-The system uses a pluggable strategy pattern where different evaluation mechanisms can be implemented:
+The system uses a gas-efficient cloneable strategy pattern where different evaluation mechanisms can be implemented:
 
 1. **ScaffoldIE.sol** - Main orchestrator contract
 
    - Manages pool creation and evaluation routing
-   - Delegates to strategy contracts for specific IE logic
-   - Maps poolId to strategy addresses
+   - Uses OpenZeppelin's `Clones` library for gas-efficient strategy deployment
+   - Maps poolId to strategy addresses with metadata
+   - Emits events for pool creation and evaluation
 
 2. **Strategy System**:
    - `IStrategy.sol` - Interface defining `createIE()` and `evaluate()` functions
-   - `BaseIEStrategy.sol` - Abstract base with hook methods for common functionality
-   - `RetroFunding.sol` - Concrete implementation using EAS attestations for retroactive funding evaluation
+   - `BaseIEStrategy.sol` - Abstract base with hook methods (`_beforeCreateIE`, `_afterCreateIE`, etc.)
+   - Concrete implementations:
+     - `RetroFundingManual.sol` - Manual evaluation with EAS attestations
+     - `ProtocolGuild.sol` - Time-weighted allocation using Protocol Guild formula
 
 ### Protocol Integrations
 
 The system integrates with key protocols:
 
 - **EAS (Ethereum Attestation Service)** - For attestation-based evaluation and impact measurement
-- **Splits Protocol** - Automated fund distribution based on calculated allocations
-- **OpenZeppelin AccessControl** - Role-based permissions (EVALUATOR_ROLE, MEASURER_ROLE, PAUSER_ROLE)
+- **Splits Protocol (0xSplits)** - Automated fund distribution based on calculated allocations
+- **OpenZeppelin** - AccessControl, Pausable, and Clones for security and efficiency
 
-### Evaluation Mechanisms
+### Role-Based Access Control
 
-Current strategies support different evaluation approaches:
+The system implements multiple roles for different operations:
 
-**RetroFunding Strategy**:
-
-- Uses EAS attestations for impact measurement
-- Implements role-based evaluation with EVALUATOR_ROLE and MEASURER_ROLE
-- Supports pausable operations for emergency controls
-- Custom AttesterResolver ensures only authorized attestations
+- `ADMIN_ROLE` - Full administrative control
+- `PAUSER_ROLE` - Emergency pause operations
+- `EVALUATOR_ROLE` - Perform evaluations
+- `MANAGER_ROLE` - Manage strategy configurations
+- `SPLITTER_ROLE` - Update splits allocations
 
 ### Core Data Flow
 
-1. **Pool Creation**: `createIE()` → Strategy sets up evaluation framework and splits contract
-2. **Registration**: Recipients are registered and configured within the strategy
-3. **Evaluation**: `evaluate()` → Recalculates allocations based on strategy-specific logic and updates splits
-4. **Distribution**: Funds sent to splits contract automatically distribute to recipients based on updated allocations
+1. **Pool Creation**: `createIE()` → Strategy clones are deployed and initialized with splits contract
+2. **Registration**: Recipients are registered with their allocation parameters
+3. **Evaluation**: `evaluate()` → Strategy calculates new allocations and updates splits
+4. **Distribution**: Funds sent to splits contract automatically distribute to recipients
 
 ## File Structure
 
 ```
 contracts/
 ├── ScaffoldIE.sol              # Main orchestrator
+├── AttesterResolver.sol        # Custom EAS resolver for controlled attestations
 ├── interfaces/                 # Contract interfaces
 │   ├── IScaffoldIE.sol        # Main contract interface
 │   ├── IStrategy.sol          # Strategy pattern interface
-│   └── ...                    # External protocol interfaces
-├── IEstrategies/              # Strategy implementations
-│   ├── BaseIEStrategy.sol     # Abstract base strategy
-│   └── RetroFunding.sol       # EAS-based retroactive funding strategy
-└── AttesterResolver.sol       # Custom EAS resolver for controlled attestations
+│   └── ISplitMain.sol         # External splits protocol interface
+└── IEstrategies/              # Strategy implementations
+    ├── BaseIEStrategy.sol     # Abstract base strategy
+    ├── RetroFundingManual.sol # Manual retroactive funding strategy
+    └── ProtocolGuild.sol      # Time-weighted allocation strategy
 
 test/
+├── Base.t.sol                 # Common test utilities and setup
 ├── ScaffoldIE.t.sol           # Main contract tests
-└── helpers/                   # Test utilities
+├── ProtocolGuild.t.sol        # Protocol Guild strategy tests
+└── RetroStrategy.t.sol        # Retroactive funding strategy tests
 
 script/
-└── Base.s.sol                 # Deployment base script
+├── Base.s.sol                 # Base deployment script
+└── Deploy.s.sol               # Main deployment script
 ```
 
 ## Key Configuration
 
-- **Solidity Version**: 0.8.29 (in foundry.toml)
+- **Solidity Version**: 0.8.29 (specified in foundry.toml)
 - **Source Directory**: `contracts/` (not the typical `src/`)
-- **Optimizer**: Enabled with 200 runs and viaIR
-- **Dependencies**: OpenZeppelin, EAS contracts, Splits contracts via git submodules
+- **Optimizer**: Enabled with 200 runs and `via_ir = true`
+- **Dependencies**: Managed via git submodules in `lib/`
+- **Test Integration**: Live Sepolia contracts for realistic testing
 
 ## Development Patterns
 
 ### Adding New Strategy
 
-1. Inherit from `BaseIEStrategy` in `contracts/IEstrategies/`
-2. Implement virtual `_createIE()` and `_evaluate()` methods
-3. Use hook methods (`_beforeCreateIE`, `_afterCreateIE`, etc.) for setup/cleanup
-4. Add comprehensive tests
+1. Create new file in `contracts/IEstrategies/` inheriting from `BaseIEStrategy`
+2. Implement required abstract methods:
+   - `_createIE()` - Initialize strategy-specific pool data
+   - `_evaluate()` - Calculate and update allocations
+3. Use hook methods for additional logic:
+   - `_beforeCreateIE()` / `_afterCreateIE()`
+   - `_beforeEvaluate()` / `_afterEvaluate()`
+4. Add comprehensive tests following existing patterns
 
-### EAS Integration Development
+### Working with Splits Protocol
 
-1. Use `AttesterResolver` for controlled attestation validation
-2. Implement proper role-based access controls (EVALUATOR_ROLE, MEASURER_ROLE)
-3. Consider pausable patterns for emergency controls
-4. Test attestation flows and resolver logic
+- Use basis points (1_000_000 = 100%) for allocation precision
+- Always ensure allocations sum to exactly 1_000_000
+- Call `updateSplit()` after recalculating allocations
+- Validate recipient addresses before updating splits
 
-### Working with Allocations
+### EAS Integration
 
-- Allocation calculations should be precise and deterministic
-- Use basis points (1_000_000 = 100%) for precision in financial calculations
-- Always ensure allocations sum to exactly 1_000_000 when updating splits
-- Validate recipient addresses and allocations before updating splits
+- Use `AttesterResolver` for controlled attestation validation
+- Implement proper schema validation in strategies
+- Consider attestation expiry and revocation handling
+- Test attestation flows with mock attesters
 
 ## Testing Strategy
 
-- Unit tests for individual contracts and functions
-- Integration tests for multi-contract workflows (EAS + splits + strategies)
-- Test both happy path and edge cases (zero allocations, equal distributions, role permissions)
-- Mock external dependencies (EAS, splits) when testing in isolation
-- Test pausable functionality and access control restrictions
+- Unit tests for individual functions and edge cases
+- Integration tests for multi-contract workflows
+- Gas optimization tests with `--gas-report`
+- Live network testing against Sepolia deployments
+- Mock external dependencies when testing in isolation
 
 ## Common Debugging
 
 - Use `forge test -vvv` for detailed transaction traces
-- Check event emissions for state changes
-- Verify external protocol interactions (EAS attestations, Splits.updateSplit)
-- Role-based access control testing requires proper account setup and role assignments
-- EAS attestation validation and resolver logic debugging
+- Check event emissions for state changes tracking
+- Verify role assignments with `hasRole()` checks
+- Validate external protocol calls (EAS attestations, Splits updates)
+- Monitor gas usage for clone deployments
+
+## Deployed Contracts (Sepolia)
+
+Key deployments are tracked in `broadcast/` directory. Check deployment scripts for latest addresses and verify on Etherscan for interaction.
