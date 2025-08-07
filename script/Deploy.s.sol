@@ -5,7 +5,7 @@ import { BaseScript } from "./Base.s.sol";
 import { console2 } from "forge-std/src/console2.sol";
 
 import { ScaffoldIE } from "../contracts/ScaffoldIE.sol";
-import { RetroFunding } from "../contracts/IEstrategies/RetroFunding.sol";
+import { RetroFundingManual } from "../contracts/IEstrategies/RetroFundingManual.sol";
 import { ISplitMain } from "../contracts/interfaces/ISplitMain.sol";
 import { IEAS } from "eas-contracts/IEAS.sol";
 import { ISchemaRegistry } from "eas-contracts/ISchemaRegistry.sol";
@@ -15,7 +15,7 @@ contract Deploy is BaseScript {
     IEAS public eas;
     ISchemaRegistry public schemaRegistry;
     ScaffoldIE public scaffoldIE;
-    RetroFunding public retroFunding;
+    RetroFundingManual public retroFunding;
     bytes32 public schemaUID;
 
     function configureChain() public {
@@ -35,7 +35,7 @@ contract Deploy is BaseScript {
         console2.log("ScaffoldIE deployed");
         console2.log("ScaffoldIE address: %s", address(scaffoldIE));
 
-        retroFunding = new RetroFunding();
+        retroFunding = new RetroFundingManual();
         console2.log("RetroFunding deployed");
         console2.log("RetroFunding address: %s", address(retroFunding));
 

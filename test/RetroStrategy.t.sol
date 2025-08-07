@@ -3,7 +3,7 @@ pragma solidity ^0.8.29;
 
 import { Test } from "forge-std/src/Test.sol";
 import { ScaffoldIE } from "../contracts/ScaffoldIE.sol";
-import { RetroFunding } from "../contracts/IEstrategies/RetroFunding.sol";
+import { RetroFundingManual } from "../contracts/IEstrategies/RetroFundingManual.sol";
 import { ISplitMain } from "../contracts/interfaces/ISplitMain.sol";
 import { console2 } from "forge-std/src/console2.sol";
 import { IEAS, Attestation, AttestationRequest, AttestationRequestData } from "eas-contracts/IEAS.sol";
@@ -14,7 +14,7 @@ import { IScaffoldIE } from "../contracts/interfaces/IScaffoldIE.sol";
 
 contract RetroStrategyTest is Test {
     ScaffoldIE public scaffoldIE;
-    RetroFunding public retroFunding;
+    RetroFundingManual public retroFunding;
     ISplitMain public splits;
     IEAS public eas;
     ISchemaRegistry public schemaRegistry;
@@ -34,7 +34,7 @@ contract RetroStrategyTest is Test {
     function setUp() public {
         configureChain();
         scaffoldIE = new ScaffoldIE(admin, address(splits));
-        retroFunding = new RetroFunding(); // implementation
+        retroFunding = new RetroFundingManual(); // implementation
 
         vm.startPrank(admin);
         scaffoldIE.setCloneableStrategy(address(retroFunding), true);
@@ -138,7 +138,7 @@ contract RetroStrategyTest is Test {
 
         // Check RetroFunding state
         address strategyAddress = scaffoldIE.getStrategy(0);
-        address[] memory storedRecipients = RetroFunding(strategyAddress).getRecipients();
+        address[] memory storedRecipients = IStrategy(strategyAddress).getRecipients();
         assertEq(storedRecipients.length, 2);
         assertEq(storedRecipients[0], recipient1);
         assertEq(storedRecipients[1], recipient2);
@@ -164,7 +164,7 @@ contract RetroStrategyTest is Test {
 
         // Check RetroFunding state
         address strategyAddress = scaffoldIE.getStrategy(0);
-        address[] memory storedRecipients = RetroFunding(strategyAddress).getRecipients();
+        address[] memory storedRecipients = IStrategy(strategyAddress).getRecipients();
         assertEq(storedRecipients.length, 3);
         assertEq(storedRecipients[0], recipient1);
         assertEq(storedRecipients[1], recipient2);

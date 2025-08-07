@@ -10,7 +10,7 @@ import { AttesterResolver } from "../AttesterResolver.sol";
 import { IScaffoldIE } from "../interfaces/IScaffoldIE.sol";
 import { IStrategy } from "../interfaces/IStrategy.sol";
 
-contract RetroFunding is BaseIEStrategy, AccessControl, Pausable {
+contract RetroFundingManual is BaseIEStrategy, AccessControl, Pausable {
     // State variables
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
     bytes32 public constant EVALUATOR_ROLE = keccak256("EVALUATOR_ROLE");
