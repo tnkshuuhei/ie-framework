@@ -2,7 +2,7 @@
 
 A smart contract scaffold for setting up Impact Evaluations (IE) with modular strategy patterns and retroactive funding mechanisms.
 
-[Example](https://app.splits.org/accounts/0x2892d26b23D4f5941a89C1cFdD513686D3999B19/?chainId=11155111)
+[Example](https://app.splits.org/accounts/0x159F16726970a8E2067318A1bD0177029C0886A3/?chainId=11155111)
 
 ## Overview
 
@@ -165,9 +165,9 @@ contract MyCustomStrategy is BaseIEStrategy {
 
 ### Sepolia
 
-- [ScaffoldIE.sol](https://sepolia.etherscan.io/address/0x91976f261cf5D87Fa369f9169e1E65bFcc5029FF)
-- [RetroFundingManual strategy implementation](https://sepolia.etherscan.io/address/0xaa6BCFD380Ce83940BCBA34B507CC80514CC7d99)
-- [Protocol Guild strategy implementation](https://sepolia.etherscan.io/address/0xd54d9310d92B815352dD0cf440A7C086FE3C3ACb)
+- [ScaffoldIE.sol](https://sepolia.etherscan.io/address/0x31f0d35410f95aFAF29864c6dbd23Adfc8D28dfC)
+- [RetroFundingManual strategy implementation](https://sepolia.etherscan.io/address/0x96dD5187e48e4C116202BFD0001936814e68fF3F)
+- [Protocol Guild strategy implementation](https://sepolia.etherscan.io/address/0xfae2FD69e301d28CB03634AA958dC9ae1d041dcb)
 
 ## Testing
 

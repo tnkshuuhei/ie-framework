@@ -46,20 +46,20 @@ contract ScaffoldIE is IScaffoldIE, AccessControl, Pausable {
 
         _checkTotalAllocations(_initialAllocations);
 
-        address[] memory IEs = new address[](poolCount);
+        address[] memory routes = new address[](poolCount);
         uint32[] memory allocations = new uint32[](poolCount);
 
         for (uint256 i = 0; i < poolCount; i++) {
-            IEs[i] = IStrategy(poolIdToStrategy[i].strategyAddress).getAddress();
+            routes[i] = IStrategy(poolIdToStrategy[i].strategyAddress).getAddress();
             allocations[i] = _initialAllocations[i];
         }
 
         // Sort IEs and allocations together in ascending order (required by SplitMain)
-        _sortAddressesAndAllocations(IEs, allocations);
+        _sortAddressesAndAllocations(routes, allocations);
 
-        rootSplit = splits.createSplit(IEs, allocations, 0, address(this));
+        rootSplit = splits.createSplit(routes, allocations, 0, address(this));
 
-        emit RouteCreated(rootSplit, allocations, msg.sender);
+        emit RouteCreated(rootSplit, routes, allocations, msg.sender);
     }
 
     /// @param _allocations The new allocations for the route
@@ -68,20 +68,20 @@ contract ScaffoldIE is IScaffoldIE, AccessControl, Pausable {
 
         _checkTotalAllocations(_allocations);
 
-        address[] memory IEs = new address[](poolCount);
+        address[] memory routes = new address[](poolCount);
         uint32[] memory allocations = new uint32[](poolCount);
 
         for (uint256 i = 0; i < poolCount; i++) {
-            IEs[i] = IStrategy(poolIdToStrategy[i].strategyAddress).getAddress();
+            routes[i] = IStrategy(poolIdToStrategy[i].strategyAddress).getAddress();
             allocations[i] = _allocations[i];
         }
 
-        // Sort IEs and allocations together in ascending order (required by SplitMain)
-        _sortAddressesAndAllocations(IEs, allocations);
+        // Sort routes and allocations together in ascending order (required by SplitMain)
+        _sortAddressesAndAllocations(routes, allocations);
 
-        splits.updateSplit(rootSplit, IEs, allocations, 0);
+        splits.updateSplit(rootSplit, routes, allocations, 0);
 
-        emit RouteUpdated(rootSplit, allocations, msg.sender);
+        emit RouteUpdated(rootSplit, routes, allocations, msg.sender);
     }
 
     /// @param _data The data for creating the IE

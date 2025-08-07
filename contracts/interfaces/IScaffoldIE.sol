@@ -5,8 +5,8 @@ import { IAccessControl } from "@openzeppelin/contracts/access/IAccessControl.so
 
 interface IScaffoldIE is IAccessControl {
     event IECreated(uint256 poolId, address strategy);
-    event RouteCreated(address route, uint32[] allocations, address _caller);
-    event RouteUpdated(address route, uint32[] allocations, address _caller);
+    event RouteCreated(address rootSplit, address[] routes, uint32[] allocations, address _caller);
+    event RouteUpdated(address rootSplit, address[] routes, uint32[] allocations, address _caller);
     event Evaluated(uint256 poolId, bytes data);
 
     error InvalidAllocations();
