@@ -4,35 +4,16 @@ pragma solidity ^0.8.29;
 import { Test } from "forge-std/src/Test.sol";
 import { ScaffoldIE } from "../contracts/ScaffoldIE.sol";
 import { RetroFundingManual } from "../contracts/IEstrategies/RetroFundingManual.sol";
-import { ISplitMain } from "../contracts/interfaces/ISplitMain.sol";
-import { console2 } from "forge-std/src/console2.sol";
-import { IEAS, Attestation, AttestationRequest, AttestationRequestData } from "eas-contracts/IEAS.sol";
-import { ISchemaRegistry } from "eas-contracts/ISchemaRegistry.sol";
+import { Base } from "./Base.t.sol";
 
 import { IStrategy } from "../contracts/interfaces/IStrategy.sol";
-import { IScaffoldIE } from "../contracts/interfaces/IScaffoldIE.sol";
 
-contract RetroStrategyTest is Test {
-    ScaffoldIE public scaffoldIE;
-    RetroFundingManual public retroFunding;
-    ISplitMain public splits;
-    IEAS public eas;
-    ISchemaRegistry public schemaRegistry;
+contract RetroStrategyTest is Base {
     bytes32 public schemaUID;
 
-    address public currentPrankee;
-    address public admin = makeAddr("admin");
-    address public splitter = makeAddr("splitter");
-    address public evaluator = makeAddr("evaluator");
-    address public manager = makeAddr("manager");
-
-    address public recipient1 = address(0x1);
-    address public recipient2 = address(0x2);
-    address public recipient3 = address(0x3);
-    address public recipient4 = address(0x4);
-
     function setUp() public {
-        configureChain();
+        _configureChain();
+        schemaUID = 0x78add97290831dd54d5e4599a0a1dc1ada8278264c93c801d72adddea395e26f;
         scaffoldIE = new ScaffoldIE(admin, address(splits));
         retroFunding = new RetroFundingManual(); // implementation
 
@@ -44,7 +25,6 @@ contract RetroStrategyTest is Test {
     function testDeployments() public view {
         assertNotEq(address(scaffoldIE), address(0));
         assertEq(scaffoldIE.getSplits(), address(splits));
-
         assertNotEq(address(retroFunding), address(0));
     }
 
@@ -215,26 +195,5 @@ contract RetroStrategyTest is Test {
         bytes memory initializeData = abi.encode(address(eas), schemaUID, admin);
 
         scaffoldIE.createIE(data, initializeData, strategy);
-    }
-
-    function configureChain() public {
-        uint256 chainId = block.chainid;
-        if (chainId == 11_155_111) {
-            splits = ISplitMain(0x54E4a6014D36c381fC43b7E24A1492F556139a6F);
-            eas = IEAS(0xC2679fBD37d54388Ce493F1DB75320D236e1815e);
-            schemaRegistry = ISchemaRegistry(0x0a7E2Ff54e76B8E6659aedc9103FB21c038050D0);
-            schemaUID = 0x78add97290831dd54d5e4599a0a1dc1ada8278264c93c801d72adddea395e26f;
-        }
-    }
-
-    modifier prankception(address prankee) {
-        address prankBefore = currentPrankee;
-        vm.stopPrank();
-        vm.startPrank(prankee);
-        _;
-        vm.stopPrank();
-        if (prankBefore != address(0)) {
-            vm.startPrank(prankBefore);
-        }
     }
 }
