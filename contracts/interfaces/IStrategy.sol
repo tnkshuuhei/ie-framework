@@ -7,6 +7,8 @@ interface IStrategy {
     error OnlyScaffoldIE(address _caller);
     error NotInitialized();
 
+    function getName() external view returns (string memory);
+
     /// @param _data The data for creating the IE
     function createIE(bytes memory _data) external;
 

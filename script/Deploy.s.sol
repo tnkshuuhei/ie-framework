@@ -6,16 +6,20 @@ import { console2 } from "forge-std/src/console2.sol";
 
 import { ScaffoldIE } from "../contracts/ScaffoldIE.sol";
 import { RetroFundingManual } from "../contracts/IEstrategies/RetroFundingManual.sol";
+import { ProtocolGuild } from "../contracts/IEstrategies/ProtocolGuild.sol";
 import { ISplitMain } from "../contracts/interfaces/ISplitMain.sol";
 import { IEAS } from "eas-contracts/IEAS.sol";
 import { ISchemaRegistry } from "eas-contracts/ISchemaRegistry.sol";
+import { IStrategy } from "../contracts/interfaces/IStrategy.sol";
 
 contract Deploy is BaseScript {
     ISplitMain public splits;
     IEAS public eas;
     ISchemaRegistry public schemaRegistry;
     ScaffoldIE public scaffoldIE;
-    RetroFundingManual public retroFunding;
+    RetroFundingManual public retroFunding = RetroFundingManual(0xaa6BCFD380Ce83940BCBA34B507CC80514CC7d99);
+    ProtocolGuild public protocolGuild = ProtocolGuild(0x7Af45f6f1a2cD23ce75B91947711Bf5F8742cCa2);
+
     bytes32 public schemaUID;
 
     function configureChain() public {
@@ -35,12 +39,17 @@ contract Deploy is BaseScript {
         console2.log("ScaffoldIE deployed");
         console2.log("ScaffoldIE address: %s", address(scaffoldIE));
 
-        retroFunding = new RetroFundingManual();
-        console2.log("RetroFunding deployed");
-        console2.log("RetroFunding address: %s", address(retroFunding));
+        // retroFunding = new RetroFundingManual();
+        // console2.log("RetroFunding deployed");
+        // console2.log("RetroFunding address: %s", address(retroFunding));
+
+        // protocolGuild = new ProtocolGuild();
+        // console2.log("ProtocolGuild deployed");
+        // console2.log("ProtocolGuild address: %s", address(protocolGuild));
 
         console2.log("Setting cloneable strategy");
         scaffoldIE.setCloneableStrategy(address(retroFunding), true);
+        scaffoldIE.setCloneableStrategy(address(protocolGuild), true);
         console2.log("Cloneable strategy set");
 
         address[] memory _recipients = new address[](2);
@@ -59,21 +68,53 @@ contract Deploy is BaseScript {
         console2.log("IE created");
 
         console2.log("Create second IE");
-
         uint32[] memory _initialAllocations2 = new uint32[](2);
         _initialAllocations2[0] = 5e5;
         _initialAllocations2[1] = 5e5;
         bytes memory data2 = abi.encode(_recipients, _initialAllocations2);
         bytes memory initializeData2 = abi.encode(address(eas), schemaUID, broadcaster);
         scaffoldIE.createIE(data2, initializeData2, address(retroFunding));
+
         console2.log("Second IE created");
+        console2.log("Create third IE");
+
+        ProtocolGuild.WorkType[] memory workTypes = new ProtocolGuild.WorkType[](2);
+        workTypes[0] = ProtocolGuild.WorkType.PARTIAL;
+        workTypes[1] = ProtocolGuild.WorkType.FULL;
+
+        bytes memory data3 = abi.encode(_recipients, workTypes, _initialAllocations2);
+        bytes memory initializeData3 = abi.encode(address(eas), schemaUID, broadcaster);
+        scaffoldIE.createIE(data3, initializeData3, address(protocolGuild));
+        console2.log("Third IE created");
+
+        console2.log("Create fourth IE");
+        bytes memory data4 = abi.encode(_recipients, workTypes, _initialAllocations2);
+        bytes memory initializeData4 = abi.encode(address(eas), schemaUID, broadcaster);
+        scaffoldIE.createIE(data4, initializeData4, address(protocolGuild));
+        console2.log("Fourth IE created");
+
         console2.log("Creating IE route");
-        scaffoldIE.createIERoute(_initialAllocations);
+
+        uint32[] memory allocations = new uint32[](4);
+
+        allocations[0] = 1e5;
+        allocations[1] = 2e5;
+        allocations[2] = 3e5;
+        allocations[3] = 4e5;
+
+        scaffoldIE.createIERoute(allocations);
         console2.log("IE route created");
 
         console2.log("RootSplit: %s", address(scaffoldIE.rootSplit()));
         console2.log("PoolCount: %s", scaffoldIE.getPoolCount());
-        console2.log("Strategy: %s", address(scaffoldIE.poolIdToStrategy(0)));
-        console2.log("Strategy2: %s", address(scaffoldIE.poolIdToStrategy(1)));
+        console2.log("Strategy: %s", address(scaffoldIE.getStrategy(0)));
+        console2.log("Strategy2: %s", address(scaffoldIE.getStrategy(1)));
+        console2.log("Strategy3: %s", address(scaffoldIE.getStrategy(2)));
+        console2.log("Strategy4: %s", address(scaffoldIE.getStrategy(3)));
+
+        console2.log("Strategy name: %s", IStrategy(scaffoldIE.getStrategy(0)).getName());
+        console2.log("Strategy name2: %s", IStrategy(scaffoldIE.getStrategy(1)).getName());
+        console2.log("Strategy name3: %s", IStrategy(scaffoldIE.getStrategy(2)).getName());
+        console2.log("Strategy name4: %s", IStrategy(scaffoldIE.getStrategy(3)).getName());
     }
 }

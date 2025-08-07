@@ -21,6 +21,10 @@ abstract contract BaseIEStrategy is IStrategy {
         _;
     }
 
+    function getName() external view returns (string memory) {
+        return name;
+    }
+
     /// @return The pool ID
     function getPoolId() external view returns (uint256) {
         return poolId;

@@ -18,8 +18,14 @@ contract ScaffoldIE is IScaffoldIE, AccessControl, Pausable {
     uint256 public poolCount;
     address public rootSplit;
 
+    struct Strategy {
+        address strategyAddress;
+        string name;
+        bool cloneable;
+    }
+
     // poolId => strategy
-    mapping(uint256 => address) public poolIdToStrategy;
+    mapping(uint256 => Strategy) public poolIdToStrategy;
 
     // strategy => cloneable
     mapping(address => bool) public cloneableStrategy;
@@ -36,12 +42,15 @@ contract ScaffoldIE is IScaffoldIE, AccessControl, Pausable {
 
     /// @param _initialAllocations The initial allocations for the route
     function createIERoute(uint32[] memory _initialAllocations) external onlyRole(SPLITTER_ROLE) {
+        require(_initialAllocations.length == poolCount, InvalidAllocations());
+
+        _checkTotalAllocations(_initialAllocations);
+
         address[] memory IEs = new address[](poolCount);
         uint32[] memory allocations = new uint32[](poolCount);
 
         for (uint256 i = 0; i < poolCount; i++) {
-            require(poolIdToStrategy[i] != address(0), InvalidStrategy());
-            IEs[i] = IStrategy(poolIdToStrategy[i]).getAddress();
+            IEs[i] = IStrategy(poolIdToStrategy[i].strategyAddress).getAddress();
             allocations[i] = _initialAllocations[i];
         }
 
@@ -55,12 +64,15 @@ contract ScaffoldIE is IScaffoldIE, AccessControl, Pausable {
 
     /// @param _allocations The new allocations for the route
     function updateRoute(uint32[] memory _allocations) external onlyRole(SPLITTER_ROLE) {
+        require(_allocations.length == poolCount, InvalidAllocations());
+
+        _checkTotalAllocations(_allocations);
+
         address[] memory IEs = new address[](poolCount);
         uint32[] memory allocations = new uint32[](poolCount);
 
         for (uint256 i = 0; i < poolCount; i++) {
-            require(poolIdToStrategy[i] != address(0), InvalidStrategy());
-            IEs[i] = IStrategy(poolIdToStrategy[i]).getAddress();
+            IEs[i] = IStrategy(poolIdToStrategy[i].strategyAddress).getAddress();
             allocations[i] = _allocations[i];
         }
 
@@ -82,7 +94,11 @@ contract ScaffoldIE is IScaffoldIE, AccessControl, Pausable {
         address clone = Clones.clone(strategy);
 
         _createIE(_data, _initializeData, clone);
-        poolIdToStrategy[poolCount] = clone;
+        poolIdToStrategy[poolCount] = Strategy({
+            strategyAddress: clone,
+            name: IStrategy(strategy).getName(),
+            cloneable: _isCloneableStrategy(strategy)
+        });
         emit IECreated(poolCount, clone);
         poolCount++;
     }
@@ -100,11 +116,11 @@ contract ScaffoldIE is IScaffoldIE, AccessControl, Pausable {
     /// @param _caller The caller address
     function registerRecipients(uint256 _poolId, bytes memory _data, address _caller) external {
         require(msg.sender == _caller, InvalidCaller());
-        require(poolIdToStrategy[_poolId] != address(0), PoolNotFound(_poolId));
+        require(poolIdToStrategy[_poolId].strategyAddress != address(0), PoolNotFound(_poolId));
 
         // access control is handled in the strategy
         // only check if the msg.sender is equal to the caller
-        IStrategy(poolIdToStrategy[_poolId]).registerRecipients(_data, _caller);
+        IStrategy(poolIdToStrategy[_poolId].strategyAddress).registerRecipients(_data, _caller);
     }
 
     /// @param _poolId The pool ID
@@ -112,11 +128,11 @@ contract ScaffoldIE is IScaffoldIE, AccessControl, Pausable {
     /// @param _caller The caller address
     function updateRecipients(uint256 _poolId, bytes memory _data, address _caller) external {
         require(msg.sender == _caller, InvalidCaller());
-        require(poolIdToStrategy[_poolId] != address(0), PoolNotFound(_poolId));
+        require(poolIdToStrategy[_poolId].strategyAddress != address(0), PoolNotFound(_poolId));
 
         // access control is handled in the strategy
         // only check if the msg.sender is equal to the caller
-        IStrategy(poolIdToStrategy[_poolId]).updateRecipients(_data, _caller);
+        IStrategy(poolIdToStrategy[_poolId].strategyAddress).updateRecipients(_data, _caller);
     }
 
     /// @param _poolId The pool ID
@@ -124,8 +140,8 @@ contract ScaffoldIE is IScaffoldIE, AccessControl, Pausable {
     /// @param _caller The caller address
     function evaluate(uint256 _poolId, bytes memory _data, address _caller) external {
         require(msg.sender == _caller, InvalidCaller());
-        require(poolIdToStrategy[_poolId] != address(0), PoolNotFound(_poolId));
-        IStrategy(poolIdToStrategy[_poolId]).evaluate(_data, _caller);
+        require(poolIdToStrategy[_poolId].strategyAddress != address(0), PoolNotFound(_poolId));
+        IStrategy(poolIdToStrategy[_poolId].strategyAddress).evaluate(_data, _caller);
     }
 
     /// @return The splits contract address
@@ -136,7 +152,7 @@ contract ScaffoldIE is IScaffoldIE, AccessControl, Pausable {
     /// @param _poolId The pool ID
     /// @return The strategy address
     function getStrategy(uint256 _poolId) external view returns (address) {
-        return poolIdToStrategy[_poolId];
+        return poolIdToStrategy[_poolId].strategyAddress;
     }
 
     function pause() public onlyRole(PAUSER_ROLE) {
@@ -172,8 +188,8 @@ contract ScaffoldIE is IScaffoldIE, AccessControl, Pausable {
     /// @param _caller The caller address
     function addEvaluator(uint256 _poolId, address _evaluator, address _caller) external onlyRole(DEFAULT_ADMIN_ROLE) {
         require(msg.sender == _caller, InvalidCaller());
-        require(poolIdToStrategy[_poolId] != address(0), PoolNotFound(_poolId));
-        IStrategy(poolIdToStrategy[_poolId]).addEvaluator(_evaluator, _caller);
+        require(poolIdToStrategy[_poolId].strategyAddress != address(0), PoolNotFound(_poolId));
+        IStrategy(poolIdToStrategy[_poolId].strategyAddress).addEvaluator(_evaluator, _caller);
     }
 
     /// @param _poolId The pool ID
@@ -188,8 +204,8 @@ contract ScaffoldIE is IScaffoldIE, AccessControl, Pausable {
         onlyRole(DEFAULT_ADMIN_ROLE)
     {
         require(msg.sender == _caller, InvalidCaller());
-        require(poolIdToStrategy[_poolId] != address(0), PoolNotFound(_poolId));
-        IStrategy(poolIdToStrategy[_poolId]).removeEvaluator(_evaluator, _caller);
+        require(poolIdToStrategy[_poolId].strategyAddress != address(0), PoolNotFound(_poolId));
+        IStrategy(poolIdToStrategy[_poolId].strategyAddress).removeEvaluator(_evaluator, _caller);
     }
 
     /// @param _poolId The pool ID
@@ -197,7 +213,7 @@ contract ScaffoldIE is IScaffoldIE, AccessControl, Pausable {
     /// @param _caller The caller address
     function addManager(uint256 _poolId, address _manager, address _caller) external onlyRole(DEFAULT_ADMIN_ROLE) {
         require(msg.sender == _caller, InvalidCaller());
-        IStrategy(poolIdToStrategy[_poolId]).addManager(_manager, _caller);
+        IStrategy(poolIdToStrategy[_poolId].strategyAddress).addManager(_manager, _caller);
     }
 
     /// @param _poolId The pool ID
@@ -205,13 +221,22 @@ contract ScaffoldIE is IScaffoldIE, AccessControl, Pausable {
     /// @param _caller The caller address
     function removeManager(uint256 _poolId, address _manager, address _caller) external onlyRole(DEFAULT_ADMIN_ROLE) {
         require(msg.sender == _caller, InvalidCaller());
-        IStrategy(poolIdToStrategy[_poolId]).removeManager(_manager, _caller);
+        IStrategy(poolIdToStrategy[_poolId].strategyAddress).removeManager(_manager, _caller);
     }
 
     /// @param _strategy The strategy address
     /// @param _cloneable Whether the strategy is cloneable
     function setCloneableStrategy(address _strategy, bool _cloneable) external onlyRole(DEFAULT_ADMIN_ROLE) {
         cloneableStrategy[_strategy] = _cloneable;
+    }
+
+    /// @return The cloneable strategies
+    function getCloneableStrategies() external view returns (Strategy[] memory) {
+        Strategy[] memory strategies = new Strategy[](poolCount);
+        for (uint256 i = 0; i < poolCount; i++) {
+            strategies[i] = poolIdToStrategy[i];
+        }
+        return strategies;
     }
 
     /// @param _strategy The strategy address
@@ -224,6 +249,15 @@ contract ScaffoldIE is IScaffoldIE, AccessControl, Pausable {
     /// @return Whether the strategy is cloneable
     function _isCloneableStrategy(address _strategy) internal view returns (bool) {
         return cloneableStrategy[_strategy];
+    }
+
+    /// @param _allocations The allocations to check
+    function _checkTotalAllocations(uint32[] memory _allocations) internal pure {
+        uint32 totalAllocations = 0;
+        for (uint256 i = 0; i < _allocations.length; i++) {
+            totalAllocations += _allocations[i];
+        }
+        require(totalAllocations == 1e6, InvalidAllocations());
     }
 
     /// @param _addresses The addresses to sort

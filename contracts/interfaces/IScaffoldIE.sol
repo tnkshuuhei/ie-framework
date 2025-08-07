@@ -4,10 +4,11 @@ pragma solidity ^0.8.29;
 import { IAccessControl } from "@openzeppelin/contracts/access/IAccessControl.sol";
 
 interface IScaffoldIE is IAccessControl {
-    event IECreated(uint256 poolId, address indexed strategy);
-    event RouteCreated(address indexed route, uint32[] allocations, address _caller);
-    event RouteUpdated(address indexed route, uint32[] allocations, address _caller);
+    event IECreated(uint256 poolId, address strategy);
+    event RouteCreated(address route, uint32[] allocations, address _caller);
+    event RouteUpdated(address route, uint32[] allocations, address _caller);
 
+    error InvalidAllocations();
     error InvalidCaller();
     error PoolNotFound(uint256 _poolId);
     error InvalidStrategy();

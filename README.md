@@ -2,7 +2,7 @@
 
 A smart contract scaffold for setting up Impact Evaluations (IE) with modular strategy patterns and retroactive funding mechanisms.
 
-[Example](https://app.splits.org/accounts/0xFDb21827d982ef73c851741DD0111F76e5113EbD/?chainId=11155111)
+[Example](https://app.splits.org/accounts/0x046af13eaA4769456F93623E6d70AAF93d2c6Afb/?chainId=11155111)
 
 ## Overview
 
@@ -163,15 +163,11 @@ contract MyCustomStrategy is BaseIEStrategy {
 
 ## Contract Addresses
 
-### Mainnet
-
-- ScaffoldIE: `TBD`
-- RetroFunding Strategy: `TBD`
-
 ### Sepolia
 
-- ScaffoldIE: `TBD`
-- RetroFunding Strategy: `TBD`
+- [ScaffoldIE.sol](https://sepolia.etherscan.io/address/0x106B06e994D1D3e185a2BDb2b9E3Bfa9e3394a07)
+- [RetroFundingManual](https://sepolia.etherscan.io/address/0xaa6BCFD380Ce83940BCBA34B507CC80514CC7d99)
+- [Protocol Guild](https://sepolia.etherscan.io/address/0x7Af45f6f1a2cD23ce75B91947711Bf5F8742cCa2)
 
 ## Testing
 
@@ -202,10 +198,6 @@ forge test -vvv
 3. Make your changes
 4. Add tests for new functionality
 5. Submit a pull request
-
-## License
-
-MIT License - see [LICENSE](LICENSE) for details.
 
 ## Sequence Diagram
 
