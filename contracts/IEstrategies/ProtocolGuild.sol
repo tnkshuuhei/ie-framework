@@ -38,10 +38,6 @@ contract ProtocolGuild is BaseIEStrategy, AccessControl, Pausable {
 
     IEAS public eas;
 
-    // Events
-    event AttestationCreated(bytes32 attestationUID);
-    event Evaluated(address[] recipients, uint32[] allocations);
-
     // Errors
     error InvalidEvaluator(address _caller);
     error InvalidManager(address _caller);
@@ -93,9 +89,9 @@ contract ProtocolGuild is BaseIEStrategy, AccessControl, Pausable {
         onlyEvaluator(_caller)
         onlyScaffoldIE
         onlyInitialized
+        returns (bytes memory)
     {
-        _beforeEvaluation(_data);
-        _evaluate(_data);
+        return _evaluate(_data);
     }
 
     /// @param _data The data for registering the recipients
@@ -175,12 +171,12 @@ contract ProtocolGuild is BaseIEStrategy, AccessControl, Pausable {
             ISplitMain(scaffoldIE.getSplits()).createSplit(_recipients, _initialAllocations, 0, address(this));
     }
 
-    function _beforeEvaluation(bytes memory _data) internal override { }
-
-    function _evaluate(bytes memory _data) internal override {
+    function _evaluate(bytes memory _data) internal returns (bytes memory) {
         (address[] memory recipients, WorkType[] memory workTypes) = abi.decode(recipientsData, (address[], WorkType[]));
         uint32[] memory allocations = _calculateAllocations(recipients, workTypes);
         _processEvaluation(_data, recipients, allocations);
+
+        return abi.encode(recipients, allocations);
     }
 
     function _calculateAllocations(
@@ -256,15 +252,6 @@ contract ProtocolGuild is BaseIEStrategy, AccessControl, Pausable {
         eas.attest(request);
 
         ISplitMain(scaffoldIE.getSplits()).updateSplit(splitsContract, recipients, allocations, 0);
-        emit Evaluated(recipients, allocations);
-    }
-
-    function _beforeCreateIE(bytes memory _data) internal override {
-        revert NotImplemented();
-    }
-
-    function _afterEvaluation(bytes memory _data) internal override {
-        revert NotImplemented();
     }
 
     function getStartDate(address _recipient) external view returns (uint256) {

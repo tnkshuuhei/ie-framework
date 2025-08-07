@@ -25,10 +25,6 @@ contract RetroFundingManual is BaseIEStrategy, AccessControl, Pausable {
     error EmptyRecipientsArray();
     error InitialAllocationsLengthMismatch();
 
-    // Events
-    event AttestationCreated(bytes32 attestationUID);
-    event Evaluated(address[] recipients, uint32[] allocations);
-
     // Errors
     error InvalidEvaluator(address _caller);
     error InvalidManager(address _caller);
@@ -80,9 +76,9 @@ contract RetroFundingManual is BaseIEStrategy, AccessControl, Pausable {
         onlyEvaluator(_caller)
         onlyScaffoldIE
         onlyInitialized
+        returns (bytes memory)
     {
-        _beforeEvaluation(_data);
-        _evaluate(_data);
+        return _evaluate(_data);
     }
 
     /// @param _data The data for registering the recipients
@@ -150,7 +146,7 @@ contract RetroFundingManual is BaseIEStrategy, AccessControl, Pausable {
             ISplitMain(scaffoldIE.getSplits()).createSplit(_recipients, _initialAllocations, 0, address(this));
     }
 
-    function _beforeEvaluation(bytes memory _data) internal override {
+    function _beforeEvaluation(bytes memory _data) internal {
         AttestationRequestData memory attestationRequestData = AttestationRequestData({
             recipient: address(0),
             expirationTime: 0,
@@ -161,11 +157,10 @@ contract RetroFundingManual is BaseIEStrategy, AccessControl, Pausable {
         });
         AttestationRequest memory request = AttestationRequest({ schema: schemaUID, data: attestationRequestData });
 
-        bytes32 attestationUID = eas.attest(request);
-        emit AttestationCreated(attestationUID);
+        eas.attest(request);
     }
 
-    function _evaluate(bytes memory _data) internal override {
+    function _evaluate(bytes memory _data) internal returns (bytes memory) {
         // This should follow the schema
         (, uint32[] memory _allocations,,,) = abi.decode(_data, (string, uint32[], address, uint256, address));
         address[] memory recipients = abi.decode(recipientsData, (address[]));
@@ -175,15 +170,8 @@ contract RetroFundingManual is BaseIEStrategy, AccessControl, Pausable {
         _sortAddressesAndAllocations(recipients, _allocations);
 
         ISplitMain(scaffoldIE.getSplits()).updateSplit(splitsContract, recipients, _allocations, 0);
-        emit Evaluated(recipients, _allocations);
-    }
 
-    function _beforeCreateIE(bytes memory _data) internal override {
-        revert NotImplemented();
-    }
-
-    function _afterEvaluation(bytes memory _data) internal override {
-        revert NotImplemented();
+        return abi.encode(recipients, _allocations);
     }
 
     function getRecipients() external view returns (bytes memory) {

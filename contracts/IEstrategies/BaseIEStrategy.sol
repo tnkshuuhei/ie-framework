@@ -44,7 +44,7 @@ abstract contract BaseIEStrategy is IStrategy {
 
     /// @param _data The data for the evaluation
     /// @param _caller The caller address
-    function evaluate(bytes memory _data, address _caller) external virtual { }
+    function evaluate(bytes memory _data, address _caller) external virtual returns (bytes memory) { }
 
     /// @param _data The data for registering the recipients
     /// @param _caller The caller address
@@ -59,15 +59,6 @@ abstract contract BaseIEStrategy is IStrategy {
 
     /// @param _data The data for updating the recipients
     function _updateRecipients(bytes memory _data) internal virtual { }
-
-    /// @param _data The evaluation data
-    function _evaluate(bytes memory _data) internal virtual { }
-
-    /// @param _data The evaluation data
-    function _beforeEvaluation(bytes memory _data) internal virtual { }
-
-    /// @param _data The evaluation data
-    function _afterEvaluation(bytes memory _data) internal virtual { }
 
     /// @param _poolId The pool ID
     /// @param _initializeData The initialization data

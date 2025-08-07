@@ -14,7 +14,7 @@ interface IStrategy {
 
     /// @param _data The evaluation data
     /// @param _caller The caller address
-    function evaluate(bytes memory _data, address _caller) external;
+    function evaluate(bytes memory _data, address _caller) external returns (bytes memory);
 
     /// @param _poolId The pool ID
     /// @param _initializeData The initialization data

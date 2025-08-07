@@ -141,7 +141,8 @@ contract ScaffoldIE is IScaffoldIE, AccessControl, Pausable {
     function evaluate(uint256 _poolId, bytes memory _data, address _caller) external {
         require(msg.sender == _caller, InvalidCaller());
         require(poolIdToStrategy[_poolId].strategyAddress != address(0), PoolNotFound(_poolId));
-        IStrategy(poolIdToStrategy[_poolId].strategyAddress).evaluate(_data, _caller);
+        bytes memory result = IStrategy(poolIdToStrategy[_poolId].strategyAddress).evaluate(_data, _caller);
+        emit Evaluated(_poolId, result);
     }
 
     /// @return The splits contract address
