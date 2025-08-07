@@ -14,6 +14,8 @@ contract RetroFundingManual is BaseIEStrategy, AccessControl, Pausable {
     bytes32 public constant EVALUATOR_ROLE = keccak256("EVALUATOR_ROLE");
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
 
+    // SCHEMA
+    // string datasets, address[] recipients, uint32[] allocations , address contract, uint256 chainId, address attester
     string public schema;
     bytes32 public schemaUID;
     address public splitsContract;
