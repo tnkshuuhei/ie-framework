@@ -6,6 +6,8 @@ on:
       - "rpgf2_results.csv"
   workflow_dispatch:
 
+env:
+  PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
 jobs:
   evaluate:
     runs-on: ubuntu-latest
