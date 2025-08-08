@@ -6,9 +6,10 @@ ScaffoldIE is a scaffold smart contract for Impact Evaluations (IE). Built durin
 
 ### Motivation
 
-During this Research Retreat, I was interested in automating Impact Evaluation (IE) iterations using smart contracts. How wonderful would it be if smart contracts could perform measurement and evaluation, determine weights, and automatically distribute funds? From a feasibility perspective, I concluded that the Protocol Guild membership model represents the minimal viable IE mechanism. Their compensation formula is remarkably simple and easily implementable on-chain. Creating incentives for Ethereum Core developers/researchers through donations from other protocols is crucial for retention, and as long as these incentives function, they continue to make significant contributions to Ethereum. As Ethereum grows, Protocol Guild's achievements become increasingly important, attracting donations from protocols like Uniswap and others. For them, the priority is not perfect evaluation accuracy, but rather how to distribute more funds to more Core developers/researchers effectively.
+During this Research Retreat, I was interested in automating Impact Evaluation (IE) iterations using smart contracts. Imagine if smart contracts could perform measurement and evaluation, determine weights, and automatically distribute funds. From a feasibility perspective, I concluded that Protocol Guild's membership model represents a minimal viable IE mechanism. Their compensation formula is remarkably simple and easily implementable on-chain. Creating incentives for Ethereum Core developers/researchers through donations from other protocols is crucial for retention, and as long as these incentives function, they continue to make significant contributions to Ethereum. As Ethereum grows, Protocol Guild's achievements become increasingly important, attracting donations from protocols like Uniswap and others. Their priority is not perfect evaluation accuracy, but rather distributing more funds to more Core developers/researchers effectively.
+
 Additionally, the scope of this project includes not only on-chain measurement/evaluation but also manual weight updates based on off-chain evaluations, similar to existing RetroFunding mechanisms.
-Building on discussions about FIL PGF, I focused on managing overall fund distribution through meta-evaluation of IE systems. The ScaffoldIE contract enables the creation of IE mechanisms based on different strategies under a core contract, with administrators able to adjust fund allocation between these IE mechanisms.
+Building on discussions about FIL PGF, I focused on managing overall fund distribution through meta-evaluation (as an external input) of IE systems. The ScaffoldIE contract enables the creation of IE mechanisms based on different strategies under a core contract, with administrators able to adjust fund allocation between these IE mechanisms.
 
 ## Deployed Contracts (Sepolia)
 
@@ -21,6 +22,23 @@ Building on discussions about FIL PGF, I focused on managing overall fund distri
 
 ## Core Architecture
 
+### Two-Layer Distribution Architecture
+
+![distribution](https://hackmd.io/_uploads/H1OdyzX_xe.png)
+ScaffoldIE implements a two-layer fund distribution system:
+
+**Layer 1: Root Distribution**
+
+- ScaffoldIE acts as the root split controller
+- Evaluators at this level can adjust weights between different IE pools
+- Enables portfolio-level fund distribution
+
+**Layer 2: IE-Specific Distribution**
+
+- Each IE pool has its own distribution mechanism
+- Currently uses 0xSplits, but designed for future integrations (Drips, Superfluid)
+- Independent evaluator access control per IE pool
+
 ### Strategy Pattern
 
 ScaffoldIE implements a gas-efficient cloneable strategy pattern where different evaluation mechanisms can be plugged in:
@@ -31,23 +49,6 @@ ScaffoldIE (Orchestrator)
     ├── ProtocolGuild (Time-weighted allocations)
     └── [Your Custom Strategy]
 ```
-
-### Multi-Layer Distribution Architecture
-
-![distribution](https://hackmd.io/_uploads/H1OdyzX_xe.png)
-ScaffoldIE implements a sophisticated two-layer fund distribution system:
-
-**Layer 1: Root Distribution**
-
-- ScaffoldIE acts as the root split controller
-- Evaluators at this level can adjust weights between different IE pools
-- Enables portfolio-level impact allocation
-
-**Layer 2: IE-Specific Distribution**
-
-- Each IE pool has its own distribution mechanism
-- Currently uses 0xSplits, but designed for future integrations (Drips, Superfluid)
-- Independent evaluator access control per IE pool
 
 ### Key Components
 
@@ -62,9 +63,10 @@ ScaffoldIE implements a sophisticated two-layer fund distribution system:
 
 ### Protocol Integrations
 
-- **EAS (Ethereum Attestation Service)**: ScaffoldIE is designed to align with hypercerts protocol v2 architecture
 - **0xSplits Protocol**: Current implementation for automated fund distribution
-- **Future Integrations**: Architecture supports [Drips](https://drips.network), [Superfluid](https://superfluid.finance), and other distribution protocols at the IE level
+- **Future Integrations**:
+  - [Drips](https://drips.network), [Superfluid](https://superfluid.finance), and other distribution protocols at the IE level
+  - Hypercerts v2 with [Ethereum Attestation Service](https://attest.org)
 
 ## How It Works
 
@@ -78,17 +80,25 @@ Creating a retroactive funding pool with off-chain measurement/evaluation:
 
 ```solidity
 // Register contributors
-address[] recipients = [alice, bob, charlie];
-uint32[] allocations = [400000, 350000, 250000]; // 40%, 35%, 25%
+address[] memory recipients = [alice, bob, carl, david];
+uint32[] memory initialAllocations = [250000, 250000, 250000, 250000]; // 25%, 25%, 25%, 25%
+
+bytes memory data = abi.encode(recipients, initialAllocations);
+
+bytes memory initializeData = abi.encode(address(eas), schemaUID, admin);
 
 // Create evaluation pool
-scaffoldIE.createIE(data, initData, retroFundingStrategy);
+scaffoldIE.createIE(data, initializeData, strategy);
+
+uint32[] memory newAllocations = [100000, 200000, 300000, 400000];
+
+bytes memory evaluationData = abi.encode(dataset, newAllocations, address(retroFunding), block.chainid, evaluator);
 
 // IE-specific evaluator updates distribution
-scaffoldIE.evaluate(poolId, allocations, evaluator);
+scaffoldIE.evaluate(poolId, evaluationData, evaluator);
 ```
 
-- Requires off-chain computation of each weight
+- Requires off-chain weight
 - [Integration with GitHub Actions](https://github.com/tnkshuuhei/scaffold-ie/actions/runs/16822751416) that triggers the evaluate function with evaluator role and [updates weights on Split contract](https://app.splits.org/accounts/0xBC45cB7D86b2b32D2de0B22195Cdb71daa7b2faa/?chainId=11155111).
 
 ### Scenario 2: Protocol Guild
@@ -99,18 +109,13 @@ Time-weighted allocation inspired by [protocolguild.org](https://protocolguild.o
 // Register with work types
 WorkType[] types = [FULL_TIME, PART_TIME, FULL_TIME];
 
-// Automatic calculation implementing minimal IE mechanism
-// Alice (6 months full-time): sqrt(180 days) × 10 = 134.16
-// Bob (6 months part-time): sqrt(180 days) × 5 = 67.08
-// Charlie (3 months full-time): sqrt(90 days) × 10 = 94.87
+bytes memory evaluationData = abi.encode(dataset/*this should be empty*/, address(protocolGuild), block.chainid, evaluator);
 
 // IE evaluator triggers recalculation
-scaffoldIE.evaluate(guildPoolId, evalData, guildEvaluator);
-
-// This pool receives funds based on root split allocation
+scaffoldIE.evaluate(poolId, evaluationData, evaluator);
 ```
 
-### Time Weight Formula (Protocol Guild Implementation)
+### Time Weight Formula
 
 The time weight for each contributor is calculated using the following formula:
 
@@ -156,4 +161,4 @@ $s_i(t) = \frac{\sqrt{(d_i^{eval} - d_i^{start}) \cdot f_i}}{\sum_{j=1}^{n} \sqr
 
 ## Challenges Faced
 
-The main challenge I encountered was the observability limitations on-chain. While the Protocol Guild case works well, for cases like RetroFunding, most of the metrics we want to observe are impossible to capture without external input (though creating decentralized oracles for metrics is an interesting problem in itself). It's not necessarily required to observe and evaluate metrics on-chain (which actually increases costs and storage demands). Rather, what's important is that data remains verifiable afterward, regardless of the technology used. For this project, I partially utilized EAS Attestations with future composability with Hypercerts v2 in mind, and I realized the importance of preserving data snapshots during measurement and evaluation phases.
+The main challenge I encountered was on-chain observability limitations. While Protocol Guild works well, RetroFunding requires metrics that are impossible to capture without external input. Observing and evaluating metrics on-chain isn't necessarily required (as it increases costs and storage demands). What matters is that data remains verifiable afterward, regardless of the technology used.
