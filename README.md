@@ -1,6 +1,6 @@
 # ScaffoldIE
 
-###　 Overview
+## Overview
 
 ScaffoldIE is a smart contract scaffold that revolutionizes how we conduct Impact Evaluations (IE) for decentralized funding allocation. Built during the Impact Evaluation Research Retreat (IERR) 2025, it implements a novel two-layer distribution architecture that enables both portfolio-level and project-level evaluation, addressing automated mechanisms to distribute funds based on measurable impact.
 
@@ -205,7 +205,7 @@ scaffoldIE.evaluate(guildPoolId, evalData, guildEvaluator);
 // This pool receives funds based on root split allocation
 ```
 
-### 🧮 Time Weight Formula (Protocol Guild Implementation)
+### Time Weight Formula (Protocol Guild Implementation)
 
 The time weight for each contributor is calculated using the following formula:
 
@@ -248,33 +248,3 @@ $s_i(t) = \frac{\sqrt{(d_i^{eval} - d_i^{start}) \cdot f_i}}{\sum_{j=1}^{n} \sqr
 - Active time calculation: `evaluation timestamp - start timestamp`
 - Time units in days rather than months
 - Using basis points (1,000,000) to adjust uint32
-
-## Sequence Diagram
-
-```mermaid
-sequenceDiagram
-
-actor ad as Admin
-participant sc as ScaffoldIE.sol
-participant retro as RetroFunding.sol
-participant sp as Split
-actor e as Evaluators(retro)
-actor m as Measurer(retro)
-
-ad ->> sc : createIE() with Strategy implementation
-sc ->> retro: create new IE
-retro->> retro: registerRecipients()
-retro --> sc: get Hat contract
-retro ->> sp: createSplit with initial recipients/allocations
-sp ->> retro: return created splits contract address
-retro ->> sc: return address
-sc-> sc: mapping poolCount => split address(this could be just a address for superfluid case)
-sc ->> ad: return tuple(poolId(poolCount) , address)
-
-m ->> sc: updateRecipients(address[] newRecipients)
-sc -> sc: update mapping
-e ->> sc: evaluate()
-sc ->> retro: IStrategy(strategy).evaluate()
-retro --> sc: getRecipients()
-retro ->> sp : updateSplit()
-```
