@@ -188,7 +188,7 @@ async function main() {
       evaluationData,
       wallet.address,
       {
-        gasLimit: 100000000,
+        gasLimit: 30000000,
       }
     );
     const receipt = await evaluateTx.wait();
