@@ -48,17 +48,41 @@ function calculateAllocations(projects) {
     0
   );
 
+  console.log(`Total percentage: ${totalPercentage}`);
+  console.log(`Number of projects: ${projects.length}`);
+
   // 各プロジェクトのallocationを計算（1e6を基準に）
   const allocations = projects.map((project) => {
     const allocation = (project.percentage * 1e6) / totalPercentage;
     return Math.floor(allocation);
   });
 
-  // 最後のプロジェクトで調整して合計が1e6になるようにする
-  const currentTotal = allocations
-    .slice(0, -1)
-    .reduce((sum, alloc) => sum + alloc, 0);
-  allocations[allocations.length - 1] = 1e6 - currentTotal;
+  // 合計を計算
+  const currentTotal = allocations.reduce((sum, alloc) => sum + alloc, 0);
+  console.log(`Current total allocation: ${currentTotal}`);
+
+  // 残りを最後のプロジェクトに追加
+  const remaining = 1e6 - currentTotal;
+  if (remaining > 0 && allocations.length > 0) {
+    allocations[allocations.length - 1] += remaining;
+  }
+
+  // 最終確認
+  const finalTotal = allocations.reduce((sum, alloc) => sum + alloc, 0);
+  console.log(`Final total allocation: ${finalTotal}`);
+  console.log(
+    `Allocations range: ${Math.min(...allocations)} - ${Math.max(
+      ...allocations
+    )}`
+  );
+
+  // 負の値や異常な値がないかチェック
+  const invalidAllocations = allocations.filter(
+    (alloc) => alloc < 0 || alloc > 1e6
+  );
+  if (invalidAllocations.length > 0) {
+    throw new Error(`Invalid allocations found: ${invalidAllocations}`);
+  }
 
   return allocations;
 }
@@ -139,6 +163,10 @@ async function main() {
     // evaluate()用のデータを作成
     // RetroFundingManualのevaluate()は以下の形式を期待:
     // (string, uint32[], address, uint256, address)
+    console.log("Encoding evaluation data...");
+    console.log("Allocations length:", allocations.length);
+    console.log("Sample allocations:", allocations.slice(0, 5));
+
     const evaluationData = ethers.utils.defaultAbiCoder.encode(
       ["string", "uint32[]", "address", "uint256", "address"],
       [
@@ -149,6 +177,9 @@ async function main() {
         wallet.address, // attester
       ]
     );
+
+    console.log("Evaluation data encoded successfully");
+    console.log("Data length:", evaluationData.length);
 
     // evaluate()を実行
     console.log("Executing evaluate...");
@@ -186,10 +217,23 @@ async function main() {
       reason: error.reason,
     });
 
+    // トランザクション失敗の場合は詳細を表示
+    if (error.transactionHash) {
+      console.error("Transaction hash:", error.transactionHash);
+      console.error("Transaction data:", error.transaction);
+    }
+
     // ガス推定エラーの場合は再試行を提案
     if (error.message.includes("UNPREDICTABLE_GAS_LIMIT")) {
       console.error(
         "\nSuggestion: Try increasing gas limit or using a different RPC provider"
+      );
+    }
+
+    // CALL_EXCEPTIONの場合はコントラクトエラーを提案
+    if (error.message.includes("CALL_EXCEPTION")) {
+      console.error(
+        "\nSuggestion: Check contract state, permissions, and data format"
       );
     }
 
