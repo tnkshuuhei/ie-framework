@@ -2,7 +2,7 @@
 
 ## Overview
 
-ScaffoldIE is a scaffold smart contract for Impact Evaluations (IE). Built during the Impact Evaluation Research Retreat (IERR) 2025, it implements a layered distribution architecture that enables both portfolio-level and project-level distribution across multiple IEs.
+ScaffoldIE is a scaffold smart contract for Impact Evaluations (IE) built during the [Impact Evaluator Research Retreat (IERR) 2025](https://www.researchretreat.org/ierr-2025/).This implements a layered distribution architecture that enables both portfolio-level and project-level distribution across multiple IEs.
 
 ### Motivation
 
@@ -10,15 +10,6 @@ During this Research Retreat, I was interested in automating Impact Evaluation (
 
 Additionally, the scope of this project includes not only on-chain measurement/evaluation but also manual weight updates based on off-chain evaluations, similar to existing RetroFunding mechanisms.
 Building on discussions about FIL PGF, I focused on managing overall fund distribution through meta-evaluation (as an external input) of IE systems. The ScaffoldIE contract enables the creation of IE mechanisms based on different strategies under a core contract, with administrators able to adjust fund allocation between these IE mechanisms.
-
-## Deployed Contracts (Sepolia)
-
-- **Root Split Example**: [View on 0xSplits](https://app.splits.org/accounts/0x159F16726970a8E2067318A1bD0177029C0886A3/?chainId=11155111) - showing 4 IE pools with different allocations
-- **ScaffoldIE**: [`0x31f0d35410f95aFAF29864c6dbd23Adfc8D28dfC`](https://sepolia.etherscan.io/address/0x31f0d35410f95aFAF29864c6dbd23Adfc8D28dfC)
-- **RetroFundingManual strategy implementation**: [`0x96dD5187e48e4C116202BFD0001936814e68fF3F`](https://sepolia.etherscan.io/address/0x96dD5187e48e4C116202BFD0001936814e68fF3F)
-- **ProtocolGuild strategy implementation**: [`0xfae2FD69e301d28CB03634AA958dC9ae1d041dcb`](https://sepolia.etherscan.io/address/0xfae2FD69e301d28CB03634AA958dC9ae1d041dcb)
-
-## Technical Overview
 
 ## Core Architecture
 
@@ -162,6 +153,9 @@ $s_i(t) = \frac{\sqrt{(d_i^{eval} - d_i^{start}) \cdot f_i}}{\sum_{j=1}^{n} \sqr
 - Time units in days rather than months
 - Using basis points (1,000,000) to adjust uint32
 
-## Challenges Faced
+## Deployed Contracts (Sepolia)
 
-The main challenge I encountered was on-chain observability limitations. While Protocol Guild works well, RetroFunding requires metrics that are impossible to capture without external input. Observing and evaluating metrics on-chain isn't necessarily required (as it increases costs and storage demands). What matters is that data remains verifiable afterward, regardless of the technology used.
+- **Root Split Example**: [View on 0xSplits](https://app.splits.org/accounts/0x159F16726970a8E2067318A1bD0177029C0886A3/?chainId=11155111) - showing 4 IE pools with different allocations
+- **ScaffoldIE**: [`0x31f0d35410f95aFAF29864c6dbd23Adfc8D28dfC`](https://sepolia.etherscan.io/address/0x31f0d35410f95aFAF29864c6dbd23Adfc8D28dfC)
+- **RetroFundingManual strategy implementation**: [`0x96dD5187e48e4C116202BFD0001936814e68fF3F`](https://sepolia.etherscan.io/address/0x96dD5187e48e4C116202BFD0001936814e68fF3F)
+- **ProtocolGuild strategy implementation**: [`0xfae2FD69e301d28CB03634AA958dC9ae1d041dcb`](https://sepolia.etherscan.io/address/0xfae2FD69e301d28CB03634AA958dC9ae1d041dcb)
