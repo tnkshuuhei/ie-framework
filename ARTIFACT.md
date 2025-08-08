@@ -107,7 +107,10 @@ Time-weighted allocation inspired by [protocolguild.org](https://protocolguild.o
 
 ```solidity
 // Register with work types
-WorkType[] types = [FULL_TIME, PART_TIME, FULL_TIME];
+enum WorkType {
+    FULL,
+    PARTIAL
+}
 
 bytes memory evaluationData = abi.encode(dataset/*this should be empty*/, address(protocolGuild), block.chainid, evaluator);
 
