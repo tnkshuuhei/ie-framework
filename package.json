@@ -18,8 +18,8 @@
   "private": true,
   "license": "MIT",
   "dependencies": {
-    "ethers": "^5.7.2",
-    "csv-parser": "^3.0.0"
+    "csv-parser": "^3.0.0",
+    "ethers": "^6.13.5"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-foundry": "^1.1.3",

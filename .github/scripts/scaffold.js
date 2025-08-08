@@ -153,7 +153,12 @@ async function main() {
     const evaluateTx = await scaffold.evaluate(
       1,
       evaluationData,
-      wallet.address
+      wallet.address,
+      {
+        gasLimit: 5000000, // 手動でガス制限を設定
+        maxFeePerGas: ethers.utils.parseUnits("50", "gwei"),
+        maxPriorityFeePerGas: ethers.utils.parseUnits("1", "gwei"),
+      }
     );
     const receipt = await evaluateTx.wait();
 
@@ -175,6 +180,19 @@ async function main() {
     });
   } catch (error) {
     console.error("Error:", error);
+    console.error("Error details:", {
+      message: error.message,
+      code: error.code,
+      reason: error.reason,
+    });
+
+    // ガス推定エラーの場合は再試行を提案
+    if (error.message.includes("UNPREDICTABLE_GAS_LIMIT")) {
+      console.error(
+        "\nSuggestion: Try increasing gas limit or using a different RPC provider"
+      );
+    }
+
     process.exit(1);
   }
 }
