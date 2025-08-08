@@ -2,7 +2,7 @@ const fs = require("fs");
 const { ethers } = require("ethers");
 const csv = require("csv-parser");
 
-// ScaffoldIE ABI (必要な関数のみ)
+// ScaffoldIE ABI (required functions only)
 const SCAFFOLD_ABI = [
   "function updateRecipients(uint256 poolId, bytes calldata data, address caller) external",
   "function evaluate(uint256 poolId, bytes calldata data, address caller) external",
@@ -17,7 +17,7 @@ async function parseCSV() {
     fs.createReadStream("rpgf2_results.csv")
       .pipe(csv())
       .on("data", (row) => {
-        // パーセンテージを数値に変換（例: "5.5730" -> 55730）
+        // Convert percentage to numeric value (e.g., "5.5730" -> 55730)
         const percentage = parseFloat(row["% of votes received"]) * 10000;
 
         projects.push({
@@ -37,7 +37,7 @@ async function parseCSV() {
 }
 
 function generateAddressFromName(name) {
-  // プロジェクト名からアドレスを生成（簡易的な実装）
+  // Generate address from project name (simple implementation)
   const hash = ethers.utils.keccak256(ethers.utils.toUtf8Bytes(name));
   return ethers.utils.getAddress(hash.slice(0, 42));
 }
@@ -51,23 +51,23 @@ function calculateAllocations(projects) {
   console.log(`Total percentage: ${totalPercentage}`);
   console.log(`Number of projects: ${projects.length}`);
 
-  // 各プロジェクトのallocationを計算（1e6を基準に）
+  // Calculate allocation for each project (based on 1e6)
   const allocations = projects.map((project) => {
     const allocation = (project.percentage * 1e6) / totalPercentage;
     return Math.floor(allocation);
   });
 
-  // 合計を計算
+  // Calculate total
   const currentTotal = allocations.reduce((sum, alloc) => sum + alloc, 0);
   console.log(`Current total allocation: ${currentTotal}`);
 
-  // 残りを最後のプロジェクトに追加
+  // Add remaining to the last project
   const remaining = 1e6 - currentTotal;
   if (remaining > 0 && allocations.length > 0) {
     allocations[allocations.length - 1] += remaining;
   }
 
-  // 最終確認
+  // Final verification
   const finalTotal = allocations.reduce((sum, alloc) => sum + alloc, 0);
   console.log(`Final total allocation: ${finalTotal}`);
   console.log(
@@ -76,7 +76,7 @@ function calculateAllocations(projects) {
     )}`
   );
 
-  // 負の値や異常な値がないかチェック
+  // Check for negative or invalid values
   const invalidAllocations = allocations.filter(
     (alloc) => alloc < 0 || alloc > 1e6
   );
@@ -118,16 +118,16 @@ async function main() {
 
     console.log(`Processing ${projects.length} projects...`);
 
-    // 受信者アドレスの配列を作成
+    // Create array of recipient addresses
     // const recipients = projects.map((project) => project.recipientAddress);
 
-    // // updateRecipients用のデータをエンコード
+    // // Encode data for updateRecipients
     // const updateData = ethers.utils.defaultAbiCoder.encode(
     //   ["address[]"],
     //   [recipients]
     // );
 
-    // // ManagerとEvaluatorを追加
+    // // Add Manager and Evaluator
     // console.log("Adding manager and evaluator...");
     // const addManagerTx = await scaffold.addManager(
     //   1,
@@ -145,7 +145,7 @@ async function main() {
     // await addEvaluatorTx.wait();
     // console.log("Evaluator added");
 
-    // // updateRecipientsを実行
+    // // Execute updateRecipients
     // console.log("Updating recipients...");
     // const updateTx = await scaffold.updateRecipients(
     //   1,
@@ -157,11 +157,11 @@ async function main() {
 
     console.log("Skipping updateRecipients - only running evaluate...");
 
-    // allocationsを計算
+    // Calculate allocations
     const allocations = calculateAllocations(projects);
 
-    // evaluate()用のデータを作成
-    // RetroFundingManualのevaluate()は以下の形式を期待:
+    // Create data for evaluate()
+    // RetroFundingManual's evaluate() expects the following format:
     // (string, uint32[], address, uint256, address)
     console.log("Encoding evaluation data...");
     console.log("Allocations length:", allocations.length);
@@ -170,7 +170,7 @@ async function main() {
     const evaluationData = ethers.utils.defaultAbiCoder.encode(
       ["string", "uint32[]", "address", "uint256", "address"],
       [
-        "RPGF2 Round 2 Evaluation", // 評価データの説明
+        "RPGF2 Round 2 Evaluation", // Evaluation data description
         allocations, // uint32[] allocations
         ethers.constants.AddressZero, // contract address (placeholder)
         11155111, // chainId (Sepolia)
@@ -181,7 +181,7 @@ async function main() {
     console.log("Evaluation data encoded successfully");
     console.log("Data length:", evaluationData.length);
 
-    // evaluate()を実行
+    // Execute evaluate()
     console.log("Executing evaluate...");
     const evaluateTx = await scaffold.evaluate(
       1,
@@ -197,7 +197,7 @@ async function main() {
     console.log("Transaction hash:", evaluateTx.hash);
     console.log("Gas used:", receipt.gasUsed.toString());
 
-    // 結果のサマリー
+    // Results summary
     console.log("\n=== Evaluation Summary ===");
     console.log(`Total projects: ${projects.length}`);
     console.log(
@@ -217,20 +217,20 @@ async function main() {
       reason: error.reason,
     });
 
-    // トランザクション失敗の場合は詳細を表示
+    // Display details for transaction failures
     if (error.transactionHash) {
       console.error("Transaction hash:", error.transactionHash);
       console.error("Transaction data:", error.transaction);
     }
 
-    // ガス推定エラーの場合は再試行を提案
+    // Suggest retry for gas estimation errors
     if (error.message.includes("UNPREDICTABLE_GAS_LIMIT")) {
       console.error(
         "\nSuggestion: Try increasing gas limit or using a different RPC provider"
       );
     }
 
-    // CALL_EXCEPTIONの場合はコントラクトエラーを提案
+    // Suggest contract error for CALL_EXCEPTION
     if (error.message.includes("CALL_EXCEPTION")) {
       console.error(
         "\nSuggestion: Check contract state, permissions, and data format"
