@@ -10,11 +10,6 @@ const SCAFFOLD_ABI = [
   "function addEvaluator(uint256 poolId, address evaluator, address caller) external",
 ];
 
-// RetroFundingManual ABI (evaluate用)
-const RETRO_FUNDING_ABI = [
-  "function evaluate(bytes calldata data, address caller) external returns (bytes memory)",
-];
-
 async function parseCSV() {
   return new Promise((resolve, reject) => {
     const projects = [];
@@ -100,13 +95,13 @@ async function main() {
     console.log(`Processing ${projects.length} projects...`);
 
     // 受信者アドレスの配列を作成
-    const recipients = projects.map((project) => project.recipientAddress);
+    // const recipients = projects.map((project) => project.recipientAddress);
 
-    // updateRecipients用のデータをエンコード
-    const updateData = ethers.utils.defaultAbiCoder.encode(
-      ["address[]"],
-      [recipients]
-    );
+    // // updateRecipients用のデータをエンコード
+    // const updateData = ethers.utils.defaultAbiCoder.encode(
+    //   ["address[]"],
+    //   [recipients]
+    // );
 
     // // ManagerとEvaluatorを追加
     // console.log("Adding manager and evaluator...");
@@ -133,8 +128,8 @@ async function main() {
     //   updateData,
     //   wallet.address
     // );
-    await updateTx.wait();
-    console.log("Recipients updated");
+    // await updateTx.wait();
+    // console.log("Recipients updated");
 
     // allocationsを計算
     const allocations = calculateAllocations(projects);
