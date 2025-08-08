@@ -13,18 +13,7 @@ During the Research Retreat, I was interested in automating Impact Evaluator ite
 ### Two-Layer Distribution Architecture
 
 ![distribution](https://hackmd.io/_uploads/H1OdyzX_xe.png)
-ScaffoldIE implements a two-layer fund distribution system:
-
-**1st Layer: Root Distribution**
-
-- ScaffoldIE acts as the root split controller
-- Evaluators at this level can adjust weights between different IE pools
-
-**2nd Layer: IE-Specific Distribution**
-
-- Each IE pool has its own distribution mechanism
-- Currently uses 0xSplits but is designed for future integrations (Drips, Superfluid etc)
-- Independent evaluator access control per IE pool
+ScaffoldIE implements a two-layer fund distribution system. The first layer handles root distribution where ScaffoldIE acts as the root split controller, allowing evaluators at this level to adjust weights between different IEs. The second layer manages IE-specific distribution, where each IE maintains its own distribution mechanism. Each IE features independent evaluator access control.
 
 ### Strategy Pattern
 
@@ -39,22 +28,21 @@ ScaffoldIE (Orchestrator)
 
 ### Key Components
 
-1. **ScaffoldIE.sol**: Main orchestrator managing IE creation, routing, and root split control
-2. **BaseIEStrategy.sol**: Abstract base strategy contract providing hooks for custom evaluation logic
-3. **Strategy Implementations**:
-   - **Manual Evaluation (RetroFundingManual)**: Enables manual weight adjustments based on off-chain evaluations, inspired by [Optimism](https://optimism.io) and [Filecoin](https://filecoin.io) retroactive funding models
-   - **ProtocolGuild**: Based on [Protocol Guild](https://protocolguild.org): implements [Generalized Impact Evaluator](https://research.protocol.ai/publications/generalized-impact-evaluators/ngwhitepaper2.pdf) concept as a minimal on-chain IE mechanism
-4. **Distribution Layers**:
-   - **Root Split**: Managed by ScaffoldIE for portfolio-level allocation
-   - **IE Splits**: Individual distribution mechanisms per evaluation pool
+The ScaffoldIE system consists of several core components that work together to create a flexible and efficient impact evaluation framework. The main orchestrator is ScaffoldIE.sol, which handles IE creation, routing, and root split control. This contract serves as the central hub where users mainly interact with the system.
+
+For custom evaluation logic, I've created BaseIEStrategy.sol as an abstract base strategy contract that provides hooks for implementing different evaluation mechanisms. This design allows developers to easily plug in their own evaluation strategies!
+
+The strategy implementations include two main approaches. First, there's the Manual Evaluation strategy (RetroFundingManual) which enables manual weight adjustments based on off-chain evaluations. This approach is inspired by retroactive funding models used by Optimism and Filecoin.
+
+Second, I've implemented a ProtocolGuild strategy based on the Protocol Guild's time-weighted formula. This implements the Generalized Impact Evaluator concept as a minimal on-chain IE mechanism, providing a more automated approach.
+
+The Root Split layer is managed by ScaffoldIE for portfolio-level allocation, while the IE Splits layer provides individual distribution mechanisms for each evaluation pool.
 
 ### Protocol Integrations
 
-- **0xSplits Protocol**: Current implementation for fund distribution
-- **Future Integrations**:
-  - [Drips](https://drips.network), [Superfluid](https://superfluid.finance), and other distribution protocols at the IE level
-  - Hypercerts v2 with [Ethereum Attestation Service](https://attest.org) for certification
-  - Oracle system to bring data onchain
+The current implementation uses the 0xSplits Protocol for fund distribution. I've designed the system with future integrations in mind to ensure scalability and flexibility.
+
+We can add custom strategies with other distribution mechanisms such as Drips and Superfluid. These integrations will provide more sophisticated distribution mechanisms while maintaining the core evaluation framework. I'm also exploring the integration of Hypercerts v2 with the Ethereum Attestation Service for certification.
 
 ## How It Works
 
@@ -64,7 +52,7 @@ ScaffoldIE (Orchestrator)
 
 #### Scenario 1: Manual Evaluation (Retroactive Funding)
 
-Creating a pool where evaluators can manually update weights based on off-chain measurements and evaluations:
+Creating an IE where evaluators can manually update weights based on off-chain measurements and evaluations:
 
 ```solidity
 // Register contributors
