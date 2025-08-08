@@ -24,10 +24,6 @@ ScaffoldIE (Orchestrator)
     └── [Your Custom Strategy]
 ```
 
-- Deploy strategy logic once, clone for multiple evaluation pools
-- Significant gas savings (up to 90% reduction in deployment costs)
-- Consistent logic with independent state management
-
 #### Two-Layer Distribution Architecture
 
 ScaffoldIE implements a sophisticated two-layer fund distribution system:
@@ -68,9 +64,8 @@ Recipients Recipients Recipients Recipients
 
 This architecture enables:
 
-- **Hierarchical Evaluation**: Different evaluators for portfolio vs. project level
+- **Hierarchical Distribution**: Different evaluators for portfolio vs. project level
 - **Protocol Flexibility**: Each IE can use different distribution protocols
-- **Granular Control**: Fine-grained access control at each layer
 - **Dynamic Rebalancing**: Adjust funding priorities without disrupting individual projects
 - **Scalability**: Add new IE pools without modifying existing ones
 
@@ -146,9 +141,7 @@ flowchart TB
 
     Error --> Wait
 
-    style Start fill:#e1f5e1
-    style Distrib fill:#e1f5e1
-    style Error fill:#ffe1e1
+
 
 ```
 
