@@ -131,6 +131,8 @@ async function main() {
     // await updateTx.wait();
     // console.log("Recipients updated");
 
+    console.log("Skipping updateRecipients - only running evaluate...");
+
     // allocationsを計算
     const allocations = calculateAllocations(projects);
 
@@ -155,9 +157,7 @@ async function main() {
       evaluationData,
       wallet.address,
       {
-        gasLimit: 5000000, // 手動でガス制限を設定
-        maxFeePerGas: ethers.utils.parseUnits("50", "gwei"),
-        maxPriorityFeePerGas: ethers.utils.parseUnits("1", "gwei"),
+        gasLimit: 10000000,
       }
     );
     const receipt = await evaluateTx.wait();
