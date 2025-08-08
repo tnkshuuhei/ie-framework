@@ -1,19 +1,20 @@
 # [ScaffoldIE](https://github.com/tnkshuuhei/scaffold-ie)
 
+Author: Shuhei Tanaka
+
 ## Overview
 
 ScaffoldIE is a scaffold smart contract for Impact Evaluator (IE) built during the [Impact Evaluator Research Retreat (IERR) 2025](https://www.researchretreat.org/ierr-2025/). This implements a layered distribution architecture that enables both portfolio-level and project-level distribution across multiple IEs.
 
-### Motivation
+## Motivation
 
 During the Research Retreat, I was interested in automating Impact Evaluator iterations using smart contracts. Imagine if smart contracts could perform measurement and evaluation, determine weights, and automatically distribute funds. From a feasibility perspective, I concluded that Protocol Guild's membership model represents a minimal viable IE mechanism. Their reward formula is remarkably simple and easily implemented on-chain. Additionally, the scope of this project includes not only on-chain measurement/evaluation but also manual weight updates based on off-chain evaluations, similar to existing RetroFunding mechanisms. And I focused on managing overall fund distribution through meta-evaluation (as an external input) of IE systems. The ScaffoldIE contract enables the creation of IE mechanisms based on different strategies under a core contract, with administrators able to adjust fund allocation between these IE mechanisms.
 
 ## Core Architecture
 
-### Two-Layer Distribution Architecture
+ScaffoldIE implements a two-layer fund distribution system. The first layer handles root distribution where ScaffoldIE acts as the root split controller, allowing evaluators at this level to adjust weights between different IEs. The second layer manages IE-specific distribution, where each IE maintains its own distribution mechanism. Each IE features independent evaluator access control.
 
 ![distribution](https://hackmd.io/_uploads/H1OdyzX_xe.png)
-ScaffoldIE implements a two-layer fund distribution system. The first layer handles root distribution where ScaffoldIE acts as the root split controller, allowing evaluators at this level to adjust weights between different IEs. The second layer manages IE-specific distribution, where each IE maintains its own distribution mechanism. Each IE features independent evaluator access control.
 
 ### Strategy Pattern
 
@@ -25,6 +26,8 @@ ScaffoldIE (Orchestrator)
     ├── ProtocolGuild (Time-weighted allocations)
     └── [Your Custom Strategy]
 ```
+
+![sequence](https://hackmd.io/_uploads/HyOdLyQuxx.png)
 
 ### Key Components
 
@@ -44,9 +47,7 @@ The current implementation uses the 0xSplits Protocol for fund distribution. I'v
 
 We can add custom strategies with other distribution mechanisms such as Drips and Superfluid. These integrations will provide more sophisticated distribution mechanisms while maintaining the core evaluation framework. I'm also exploring the integration of Hypercerts v2 with the Ethereum Attestation Service for certification.
 
-## How It Works
-
-![sequence](https://hackmd.io/_uploads/HyOdLyQuxx.png)
+### How It Works
 
 ![iteration](https://hackmd.io/_uploads/S1u_Ikmdel.png)
 
@@ -90,7 +91,7 @@ scaffoldIE.evaluate(poolId, evaluationData, evaluator);
 This approach requires off-chain weight calculation.
 The system includes [integration with GitHub Actions](https://github.com/tnkshuuhei/scaffold-ie/actions/runs/16822751416) that triggers the evaluate function and [updates weights on the Split contract](https://app.splits.org/accounts/0xBC45cB7D86b2b32D2de0B22195Cdb71daa7b2faa/?chainId=11155111).
 
-### Scenario 2: Protocol Guild
+#### Scenario 2: Protocol Guild
 
 Time-weighted allocation inspired by [protocolguild.org](https://protocolguild.org):
 
@@ -107,11 +108,9 @@ bytes memory evaluationData = abi.encode(dataset/*this should be empty*/, addres
 scaffoldIE.evaluate(poolId, evaluationData, evaluator);
 ```
 
-### Time Weight Formula
+#### Time Weight Formula
 
 The time weight for each contributor is calculated using the following formula:
-
-#### Individual Time Weight
 
 For contributor $i$ at evaluation time $t$:
 $w_i(t) = \sqrt{(d_i^{eval} - d_i^{start}) \cdot f_i}$
