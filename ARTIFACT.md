@@ -17,6 +17,8 @@ Building on discussions about FIL PGF, I focused on managing overall fund distri
 - **RetroFundingManual strategy implementation**: [`0x96dD5187e48e4C116202BFD0001936814e68fF3F`](https://sepolia.etherscan.io/address/0x96dD5187e48e4C116202BFD0001936814e68fF3F)
 - **ProtocolGuild strategy implementation**: [`0xfae2FD69e301d28CB03634AA958dC9ae1d041dcb`](https://sepolia.etherscan.io/address/0xfae2FD69e301d28CB03634AA958dC9ae1d041dcb)
 
+## Technical Overview
+
 ## Core Architecture
 
 ### Strategy Pattern
@@ -151,3 +153,7 @@ $s_i(t) = \frac{\sqrt{(d_i^{eval} - d_i^{start}) \cdot f_i}}{\sum_{j=1}^{n} \sqr
 - Active time calculation: `evaluation timestamp - start timestamp`
 - Time units in days rather than months
 - Using basis points (1,000,000) to adjust uint32
+
+## Challenges Faced
+
+The main challenge I encountered was the observability limitations on-chain. While the Protocol Guild case works well, for cases like RetroFunding, most of the metrics we want to observe are impossible to capture without external input (though creating decentralized oracles for metrics is an interesting problem in itself). It's not necessarily required to observe and evaluate metrics on-chain (which actually increases costs and storage demands). Rather, what's important is that data remains verifiable afterward, regardless of the technology used. For this project, I partially utilized EAS Attestations with future composability with Hypercerts v2 in mind, and I realized the importance of preserving data snapshots during measurement and evaluation phases.
