@@ -4,6 +4,12 @@
 
 ScaffoldIE is a scaffold smart contract for Impact Evaluations (IE). Built during the Impact Evaluation Research Retreat (IERR) 2025, it implements a layered distribution architecture that enables both portfolio-level and project-level distribution across multiple IEs.
 
+### Motivation
+
+During this Research Retreat, I was interested in automating Impact Evaluation (IE) iterations using smart contracts. How wonderful would it be if smart contracts could perform measurement and evaluation, determine weights, and automatically distribute funds? From a feasibility perspective, I concluded that the Protocol Guild membership model represents the minimal viable IE mechanism. Their compensation formula is remarkably simple and easily implementable on-chain. Creating incentives for Ethereum Core developers/researchers through donations from other protocols is crucial for retention, and as long as these incentives function, they continue to make significant contributions to Ethereum. As Ethereum grows, Protocol Guild's achievements become increasingly important, attracting donations from protocols like Uniswap and others. For them, the priority is not perfect evaluation accuracy, but rather how to distribute more funds to more Core developers/researchers effectively.
+Additionally, the scope of this project includes not only on-chain measurement/evaluation but also manual weight updates based on off-chain evaluations, similar to existing RetroFunding mechanisms.
+Building on discussions about FIL PGF, I focused on managing overall fund distribution through meta-evaluation of IE systems. The ScaffoldIE contract enables the creation of IE mechanisms based on different strategies under a core contract, with administrators able to adjust fund allocation between these IE mechanisms.
+
 ## Deployed Contracts (Sepolia)
 
 - **Root Split Example**: [View on 0xSplits](https://app.splits.org/accounts/0x159F16726970a8E2067318A1bD0177029C0886A3/?chainId=11155111) - showing 4 IE pools with different allocations
@@ -28,26 +34,6 @@ ScaffoldIE (Orchestrator)
 
 ![distribution](https://hackmd.io/_uploads/H1OdyzX_xe.png)
 ScaffoldIE implements a sophisticated two-layer fund distribution system:
-
-```
-Treasury/Funding Source
-         |
-         v
-   Root Split (0x159F16726970a8E2067318A1bD0177029C0886A3)
-         |
-    [Evaluator adjusts weights]
-         |
-    +--------+--------+--------+
-    |        |        |        |
-   10%      20%      30%      40%
-    |        |        |        |
-    v        v        v        v
- Pool 0   Pool 1   Pool 2   Pool 3
-    |        |        |        |
-    v        v        v        v
-Recipients Recipients Recipients Recipients
-(Splits)  (Splits)  (Splits)  (Splits)
-```
 
 **Layer 1: Root Distribution**
 
