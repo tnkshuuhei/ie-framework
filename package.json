@@ -17,6 +17,10 @@
   ],
   "private": true,
   "license": "MIT",
+  "dependencies": {
+    "csv-parser": "^3.0.0",
+    "ethers": "^5.7.2"
+  },
   "devDependencies": {
     "@nomicfoundation/hardhat-foundry": "^1.1.3",
     "@nomicfoundation/hardhat-toolbox": "^5.0.0",
@@ -29,6 +33,7 @@
     "test": "forge clean && forge test ",
     "coverage": "forge clean && forge coverage",
     "test:sepolia": "forge clean && forge test --rpc-url https://sepolia.drpc.org",
-    "deploy:sepolia": "forge clean && forge script script/Deploy.s.sol:Deploy --rpc-url https://sepolia.drpc.org --broadcast --etherscan-api-key sepolia --verify"
+    "deploy:sepolia": "forge clean && forge script script/Deploy.s.sol:Deploy --rpc-url https://sepolia.drpc.org --broadcast --etherscan-api-key sepolia --verify",
+    "mock:sepolia": "forge clean && forge script script/Mock.s.sol:MockScript --rpc-url https://sepolia.drpc.org --broadcast"
   }
 }

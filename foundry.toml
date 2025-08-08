@@ -9,7 +9,10 @@ ffi = true
 ast = true
 build_info = true
 extra_output = ["storageLayout"]
-fs_permissions = [{ access = "read", path = "out" }]
+fs_permissions = [
+	{ access = "read", path = "out" },
+	{ access = "read", path = "rpgf2_results.csv" },
+]
 optimizer = true
 optimizer_runs = 200
 

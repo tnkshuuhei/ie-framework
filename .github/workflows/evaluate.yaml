@@ -1,0 +1,38 @@
+name: Evaluate RPGF2 Results
+
+on:
+  pull_request:
+    types: [closed]
+    paths:
+      - "rpgf2_results.csv"
+  workflow_dispatch:
+
+env:
+  PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
+jobs:
+  evaluate:
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.merged == true
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.x.x
+          run_install: true
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Run evaluation script
+        env:
+          PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
+        run: node .github/scripts/scaffold.js
