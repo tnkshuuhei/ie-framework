@@ -2,11 +2,11 @@
 
 ## Overview
 
-ScaffoldIE is a smart contract scaffold that revolutionizes how we conduct Impact Evaluations (IE) for decentralized funding allocation. Built during the Impact Evaluation Research Retreat (IERR) 2025, it implements a novel two-layer distribution architecture that enables both portfolio-level and project-level evaluation, addressing automated mechanisms to distribute funds based on measurable impact.
+ScaffoldIE is a smart contract scaffold that how we conduct Impact Evaluations (IE). Built during the Impact Evaluation Research Retreat (IERR) 2025, it implements a two-layer distribution architecture that enables both portfolio-level and project-level evaluation, addressing automated mechanisms to distribute funds based on post-measurement.
 
 ### Deployed Contracts (Sepolia)
 
-- **Root Split Example**: [View on 0xSplits](https://app.splits.org/accounts/0x159F16726970a8E2067318A1bD0177029C0886A3/?chainId=11155111) - Live demo showing 4 IE pools with different allocations
+- **Root Split Example**: [View on 0xSplits](https://app.splits.org/accounts/0x159F16726970a8E2067318A1bD0177029C0886A3/?chainId=11155111) - showing 4 IE pools with different allocations
 - **ScaffoldIE**: [`0x31f0d35410f95aFAF29864c6dbd23Adfc8D28dfC`](https://sepolia.etherscan.io/address/0x31f0d35410f95aFAF29864c6dbd23Adfc8D28dfC)
 - **RetroFundingManual strategy implementation**: [`0x96dD5187e48e4C116202BFD0001936814e68fF3F`](https://sepolia.etherscan.io/address/0x96dD5187e48e4C116202BFD0001936814e68fF3F)
 - **ProtocolGuild strategy implementation**: [`0xfae2FD69e301d28CB03634AA958dC9ae1d041dcb`](https://sepolia.etherscan.io/address/0xfae2FD69e301d28CB03634AA958dC9ae1d041dcb)
@@ -52,6 +52,8 @@ Recipients Recipients Recipients Recipients
 (Splits)  (Splits)  (Splits)  (Splits)
 ```
 
+![rootSplits](https://hackmd.io/_uploads/BJZ9ry7_ll.png)
+
 **Layer 1: Root Distribution**
 
 - ScaffoldIE acts as the root split controller
@@ -91,6 +93,8 @@ This architecture enables:
 
 ### How It Works
 
+![sequence](https://hackmd.io/_uploads/HyOdLyQuxx.png)
+
 ```mermaid
 sequenceDiagram
     participant Admin
@@ -112,6 +116,8 @@ sequenceDiagram
 ```
 
 ### Iteration Flow Diagram
+
+![iteration](https://hackmd.io/_uploads/S1u_Ikmdel.png)
 
 ```mermaid
 flowchart TB
