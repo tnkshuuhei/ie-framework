@@ -46,7 +46,7 @@ ScaffoldIE (Orchestrator)
 1. **ScaffoldIE.sol** - Main orchestrator managing pool creation, evaluation routing, and root split control
 2. **BaseIEStrategy.sol** - Abstract base providing hooks for custom evaluation logic
 3. **Strategy Implementations**:
-   - **RetroFundingManual**: Inspired by [Optimism](https://optimism.io) and [Filecoin](https://filecoin.io) retroactive funding models
+   - **Manual Evaluation (RetroFundingManual)**: Enables manual weight adjustments based on off-chain evaluations, inspired by [Optimism](https://optimism.io) and [Filecoin](https://filecoin.io) retroactive funding models
    - **ProtocolGuild**: Based on [Protocol Guild](https://protocolguild.org); implements [Generalized Impact Evaluator](https://research.protocol.ai/publications/generalized-impact-evaluators/ngwhitepaper2.pdf) concept as a minimal on-chain IE mechanism
 4. **Distribution Layers**:
    - **Root Split**: Managed by ScaffoldIE for portfolio-level allocation
@@ -65,9 +65,9 @@ ScaffoldIE (Orchestrator)
 
 ![iteration](https://hackmd.io/_uploads/S1u_Ikmdel.png)
 
-#### Scenario 1: Retroactive Funding
+#### Scenario 1: Manual Evaluation (Retroactive Funding)
 
-Creating a retroactive funding pool with off-chain measurement/evaluation:
+Creating a pool where evaluators can manually update weights based on off-chain measurements and evaluations:
 
 ```solidity
 // Register contributors
