@@ -2,6 +2,7 @@ name: Evaluate RPGF2 Results
 
 on:
   pull_request:
+    types: [closed]
     paths:
       - "rpgf2_results.csv"
   workflow_dispatch:
@@ -11,6 +12,7 @@ env:
 jobs:
   evaluate:
     runs-on: ubuntu-latest
+    if: github.event.pull_request.merged == true
 
     steps:
       - name: Checkout code
