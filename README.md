@@ -2,18 +2,35 @@
 
 ## Overview
 
-ScaffoldIE is a smart contract scaffold that how we conduct Impact Evaluations (IE). Built during the Impact Evaluation Research Retreat (IERR) 2025, it implements a two-layer distribution architecture that enables both portfolio-level and project-level evaluation, addressing automated mechanisms to distribute funds based on post-measurement.
+ScaffoldIE is a scaffold smart contract for Impact Evaluations (IE) built during the [Impact Evaluator Research Retreat (IERR) 2025](https://www.researchretreat.org/ierr-2025/). This implements a layered distribution architecture that enables both portfolio-level and project-level distribution across multiple IEs.
 
-### Deployed Contracts (Sepolia)
+### Motivation
 
-- **Root Split Example**: [View on 0xSplits](https://app.splits.org/accounts/0x159F16726970a8E2067318A1bD0177029C0886A3/?chainId=11155111) - showing 4 IE pools with different allocations
-- **ScaffoldIE**: [`0x31f0d35410f95aFAF29864c6dbd23Adfc8D28dfC`](https://sepolia.etherscan.io/address/0x31f0d35410f95aFAF29864c6dbd23Adfc8D28dfC)
-- **RetroFundingManual strategy implementation**: [`0x96dD5187e48e4C116202BFD0001936814e68fF3F`](https://sepolia.etherscan.io/address/0x96dD5187e48e4C116202BFD0001936814e68fF3F)
-- **ProtocolGuild strategy implementation**: [`0xfae2FD69e301d28CB03634AA958dC9ae1d041dcb`](https://sepolia.etherscan.io/address/0xfae2FD69e301d28CB03634AA958dC9ae1d041dcb)
+During the Research Retreat, I was interested in automating Impact Evaluation (IE) iterations using smart contracts. Imagine if smart contracts could perform measurement and evaluation, determine weights, and automatically distribute funds. From a feasibility perspective, I concluded that Protocol Guild's membership model represents a minimal viable IE mechanism. Their compensation formula is remarkably simple and easily implemented on-chain. Creating incentives for Ethereum Core developers/researchers through donations from other protocols is crucial for retention. As long as these incentives function, they continue to make significant contributions to Ethereum. As Ethereum grows, Protocol Guild's achievements become increasingly important, attracting donations from protocols like Uniswap and others. Their priority is not perfect evaluation accuracy but rather distributing more funds to more Core developers/researchers effectively.
 
-### Core Architecture
+Additionally, the scope of this project includes not only on-chain measurement/evaluation but also manual weight updates based on off-chain evaluations, similar to existing RetroFunding mechanisms.
+Building on discussions about FIL PGF, I focused on managing overall fund distribution through meta-evaluation (as an external input) of IE systems. The ScaffoldIE contract enables the creation of IE mechanisms based on different strategies under a core contract, with administrators able to adjust fund allocation between these IE mechanisms.
 
-#### Modular Strategy Pattern
+## Core Architecture
+
+### Two-Layer Distribution Architecture
+
+![distribution](https://hackmd.io/_uploads/H1OdyzX_xe.png)
+ScaffoldIE implements a two-layer fund distribution system:
+
+**Layer 1: Root Distribution**
+
+- - ScaffoldIE acts as the root split controller
+- Evaluators at this level can adjust weights between different IE pools
+- Enables portfolio-level fund distribution
+
+**Layer 2: IE-Specific Distribution**
+
+- - Each IE pool has its own distribution mechanism
+- - Currently uses 0xSplits but is designed for future integrations (Drips, Superfluid)
+- - Independent evaluator access control per IE pool
+
+### Strategy Pattern
 
 ScaffoldIE implements a gas-efficient cloneable strategy pattern where different evaluation mechanisms can be plugged in:
 
@@ -24,187 +41,88 @@ ScaffoldIE (Orchestrator)
     └── [Your Custom Strategy]
 ```
 
-#### Two-Layer Distribution Architecture
+### Key Components
 
-ScaffoldIE implements a sophisticated two-layer fund distribution system:
-
-```
-Treasury/Funding Source
-         |
-         v
-   Root Split (0x159F16726970a8E2067318A1bD0177029C0886A3)
-         |
-    [Evaluator adjusts weights]
-         |
-    +--------+--------+--------+
-    |        |        |        |
-   10%      20%      30%      40%
-    |        |        |        |
-    v        v        v        v
- Pool 0   Pool 1   Pool 2   Pool 3
-    |        |        |        |
-    v        v        v        v
-Recipients Recipients Recipients Recipients
-(Splits)  (Splits)  (Splits)  (Splits)
-```
-
-![rootSplits](https://hackmd.io/_uploads/BJZ9ry7_ll.png)
-
-**Layer 1: Root Distribution**
-
-- ScaffoldIE acts as the root split controller
-- Evaluators at this level can adjust weights between different IE pools
-- Enables portfolio-level impact allocation
-
-**Layer 2: IE-Specific Distribution**
-
-- Each IE pool has its own distribution mechanism
-- Currently uses 0xSplits, but designed for future integrations (Drips, Superfluid)
-- Independent evaluator access control per IE pool
-
-This architecture enables:
-
-- **Hierarchical Distribution**: Different evaluators for portfolio vs. project level
-- **Protocol Flexibility**: Each IE can use different distribution protocols
-- **Dynamic Rebalancing**: Adjust funding priorities without disrupting individual projects
-- **Scalability**: Add new IE pools without modifying existing ones
-
-#### Key Components
-
-1. **ScaffoldIE.sol** - Main orchestrator managing pool creation, evaluation routing, and root split control
-2. **BaseIEStrategy.sol** - Abstract base providing hooks for custom evaluation logic
+1. **ScaffoldIE.sol**: Main orchestrator managing pool creation, evaluation routing, and root split control
+2. **BaseIEStrategy.sol**: Abstract base providing hooks for custom evaluation logic
 3. **Strategy Implementations**:
-   - **RetroFundingManual**: Inspired by [Optimism](https://optimism.io) and [Filecoin](https://filecoin.io) retroactive funding models
-   - **ProtocolGuild**: Based on [Protocol Guild](https://protocolguild.org) and implements Protocol Labs' [Generalized Impact Evaluator](https://research.protocol.ai/publications/generalized-impact-evaluators/ngwhitepaper2.pdf) concept as a minimal on-chain IE mechanism
+   - **Manual Evaluation (RetroFundingManual)**: Enables manual weight adjustments based on off-chain evaluations, inspired by [Optimism](https://optimism.io) and [Filecoin](https://filecoin.io) retroactive funding models
+   - **ProtocolGuild**: Based on [Protocol Guild](https://protocolguild.org); implements [Generalized Impact Evaluator](https://research.protocol.ai/publications/generalized-impact-evaluators/ngwhitepaper2.pdf) concept as a minimal on-chain IE mechanism
 4. **Distribution Layers**:
    - **Root Split**: Managed by ScaffoldIE for portfolio-level allocation
    - **IE Splits**: Individual distribution mechanisms per evaluation pool
 
-#### Protocol Integrations
+### Protocol Integrations
 
-- **EAS (Ethereum Attestation Service)**: Scaffold IE is designed to align with hypercerts protocol v2 architecture
 - **0xSplits Protocol**: Current implementation for automated fund distribution
-- **Future Integrations**: Architecture supports [Drips](https://drips.network), [Superfluid](https://superfluid.finance), and other distribution protocols at the IE level
+- **Future Integrations**:
+  - [Drips](https://drips.network), [Superfluid](https://superfluid.finance), and other distribution protocols at the IE level
+  - Hypercerts v2 with [Ethereum Attestation Service](https://attest.org)
 
-### How It Works
+## How It Works
 
 ![sequence](https://hackmd.io/_uploads/HyOdLyQuxx.png)
 
-```mermaid
-sequenceDiagram
-    participant Admin
-    participant ScaffoldIE
-    participant Strategy
-    participant Splits
-    participant EAS
-
-    Admin->>ScaffoldIE: createIE(strategy, recipients)
-    ScaffoldIE->>Strategy: Deploy clone
-    Strategy->>Splits: Create split contract
-    Note over Strategy: Recipients registered
-
-    Admin->>ScaffoldIE: evaluate(data)
-    ScaffoldIE->>Strategy: Calculate allocations
-    Strategy->>EAS: Create attestation
-    Strategy->>Splits: Update allocations
-    Note over Splits: Funds auto-distributed
-```
-
-### Iteration Flow Diagram
-
 ![iteration](https://hackmd.io/_uploads/S1u_Ikmdel.png)
 
-```mermaid
-flowchart TB
-    Start([Pool Created]) --> Init[Initialize Strategy]
-    Init --> Reg[Register Recipients]
-    Reg --> Iter{Evaluate}
+#### Scenario 1: Manual Evaluation (Retroactive Funding)
 
-    Iter --> Check[Check Evaluation Criteria]
-    Check --> |Manual Strategy| Manual[Off-chain Calculation]
-    Check --> |e.g.Protocol Guild| Auto[On-chain Calculation]
-
-    Manual --> Input[Input New Allocations]
-    Auto --> Calc[Calculate Time Weights]
-
-    Input --> Validate{Validate Allocations}
-    Calc --> Validate
-
-    Validate --> |Invalid| Error[Revert Transaction]
-    Validate --> |Valid| Update[Update Split Contract]
-
-    Update --> Attest[Create EAS Attestation]
-    Attest --> Distrib[Funds Distributed]
-    Distrib --> Wait[Wait for Next Period]
-
-    Wait --> Iter
-
-    Error --> Wait
-
-
-
-```
-
-#### Two-Layer Distribution Example
-
-```solidity
-// Layer 2: Create multiple IE pools with different strategies
-scaffoldIE.createIE(retroData, initData, retroFundingStrategy); // Pool 0
-scaffoldIE.createIE(guildData, initData, protocolGuildStrategy); // Pool 1
-
-// Layer 1: Create root split distributing between IE pools
-uint32[] allocations = [600000, 400000]; // 60% to Pool 0, 40% to Pool 1
-scaffoldIE.createIERoute(allocations);
-
-// Layer 1 Evaluation: Root evaluator can adjust IE pool weights
-scaffoldIE.updateRoute([700000, 300000]); // Rebalance to 70/30
-
-// Layer 2 Evaluation: Each IE has independent evaluators
-scaffoldIE.evaluate(0, retroAllocations, retroEvaluator); // Pool 0 evaluation
-scaffoldIE.evaluate(1, guildData, guildEvaluator); // Pool 1 evaluation
-
-// Each layer has independent evaluation criteria
-```
-
-#### Scenario 1: Retroactive Funding
-
-Creating a retroactive funding pool with off-chain measurement/evaluation:
+Creating a pool where evaluators can manually update weights based on off-chain measurements and evaluations:
 
 ```solidity
 // Register contributors
-address[] recipients = [alice, bob, charlie];
-uint32[] allocations = [400000, 350000, 250000]; // 40%, 35%, 25%
+address[] memory recipients = new address[](4);
+recipients[0] = alice;
+recipients[1] = bob;
+recipients[2] = carl;
+recipients[3] = david;
+
+uint32[] memory initialAllocations = new uint32[](4); // 25%, 25%, 25%, 25%
+initialAllocations[0] = 250000;
+initialAllocations[1] = 250000;
+initialAllocations[2] = 250000;
+initialAllocations[3] = 250000;
+
+bytes memory data = abi.encode(recipients, initialAllocations);
+
+bytes memory initializeData = abi.encode(address(eas), schemaUID, admin);
 
 // Create evaluation pool
-scaffoldIE.createIE(data, initData, retroFundingStrategy);
+scaffoldIE.createIE(data, initializeData, strategy);
+
+uint32[] memory newAllocations = new uint32[](4);
+newAllocations[0] = 100000;
+newAllocations[1] = 200000;
+newAllocations[2] = 300000;
+newAllocations[3] = 400000;
+
+bytes memory evaluationData = abi.encode(dataset, newAllocations, address(retroFunding), block.chainid, evaluator);
 
 // IE-specific evaluator updates distribution
-scaffoldIE.evaluate(poolId, allocations, evaluator);
+scaffoldIE.evaluate(poolId, evaluationData, evaluator);
 ```
 
-- Require offchain computation of each weights
-- Possibly integrate GitHub Actions that triger evaluate function with evaluator role
+This approach requires off-chain weight calculation.
+The system includes [integration with GitHub Actions](https://github.com/tnkshuuhei/scaffold-ie/actions/runs/16822751416) that triggers the evaluate function with the evaluator role and [updates weights on the Split contract](https://app.splits.org/accounts/0xBC45cB7D86b2b32D2de0B22195Cdb71daa7b2faa/?chainId=11155111).
 
-#### Scenario 2: Protocol Guild
+### Scenario 2: Protocol Guild
 
 Time-weighted allocation inspired by [protocolguild.org](https://protocolguild.org):
 
 ```solidity
 // Register with work types
-WorkType[] types = [FULL_TIME, PART_TIME, FULL_TIME];
+enum WorkType {
+    FULL,
+    PARTIAL
+}
 
-// Automatic calculation implementing minimal IE mechanism
-// Alice (6 months full-time): sqrt(180 days) × 10 = 134.16
-// Bob (6 months part-time): sqrt(180 days) × 5 = 67.08
-// Charlie (3 months full-time): sqrt(90 days) × 10 = 94.87
+bytes memory evaluationData = abi.encode(dataset/*this should be empty*/, address(protocolGuild), block.chainid, evaluator);
 
 // IE evaluator triggers recalculation
-scaffoldIE.evaluate(guildPoolId, evalData, guildEvaluator);
-
-// This pool receives funds based on root split allocation
+scaffoldIE.evaluate(poolId, evaluationData, evaluator);
 ```
 
-### Time Weight Formula (Protocol Guild Implementation)
+### Time Weight Formula
 
 The time weight for each contributor is calculated using the following formula:
 
@@ -246,4 +164,11 @@ $s_i(t) = \frac{\sqrt{(d_i^{eval} - d_i^{start}) \cdot f_i}}{\sum_{j=1}^{n} \sqr
 
 - Active time calculation: `evaluation timestamp - start timestamp`
 - Time units in days rather than months
-- Using basis points (1,000,000) to adjust uint32
+- Using basis points (1,000,000) to adjust for uint32
+
+## Deployed Contracts (Sepolia)
+
+- **Root Split Example**: [View on 0xSplits](https://app.splits.org/accounts/0x159F16726970a8E2067318A1bD0177029C0886A3/?chainId=11155111) - showing 4 IE pools with different allocations
+- **ScaffoldIE**: [`0x31f0d35410f95aFAF29864c6dbd23Adfc8D28dfC`](https://sepolia.etherscan.io/address/0x31f0d35410f95aFAF29864c6dbd23Adfc8D28dfC)
+- **RetroFundingManual strategy implementation**: [`0x96dD5187e48e4C116202BFD0001936814e68fF3F`](https://sepolia.etherscan.io/address/0x96dD5187e48e4C116202BFD0001936814e68fF3F)
+- **ProtocolGuild strategy implementation**: [`0xfae2FD69e301d28CB03634AA958dC9ae1d041dcb`](https://sepolia.etherscan.io/address/0xfae2FD69e301d28CB03634AA958dC9ae1d041dcb)
